@@ -4,6 +4,9 @@ return {
     editions = function()
         local hyvlib = import("hyvlib").hyvlib
 
+        dbg(hyvlib)
+        dbg(hyvlib.hsr.global.api.get())
+
         local editions = {}
 
         for name, edition in pairs(hyvlib.hsr) do
