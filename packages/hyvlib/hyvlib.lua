@@ -34,13 +34,15 @@ local games = {
             global = {
                 api_url = "https://sg-hyp-api.hoyoverse.com/hyp/hyp-connect/api/getGamePackages?launcher_id=VYTpXlbWo8",
                 game_id = "hk4e_global",
-                title = editions_locales.global
+                title = editions_locales.global,
+                data_folder = "GenshinImpact_Data"
             },
 
             china = {
                 api_url = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGamePackages?launcher_id=jGHBHlcOq1",
                 game_id = "hk4e_cn",
-                title = editions_locales.china
+                title = editions_locales.china,
+                data_folder = "YuanShen_Data"
             }
         }
     },
@@ -50,13 +52,15 @@ local games = {
             global = {
                 api_url = "https://sg-hyp-api.hoyoverse.com/hyp/hyp-connect/api/getGamePackages?launcher_id=VYTpXlbWo8",
                 game_id = "nap_global",
-                title = editions_locales.global
+                title = editions_locales.global,
+                data_folder = "ZenlessZoneZero_Data"
             },
 
             china = {
                 api_url = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGamePackages?launcher_id=jGHBHlcOq1",
                 game_id = "nap_cn",
-                title = editions_locales.china
+                title = editions_locales.china,
+                data_folder = "ZenlessZoneZero_Data"
             }
         }
     },
@@ -66,13 +70,15 @@ local games = {
             global = {
                 api_url = "https://sg-hyp-api.hoyoverse.com/hyp/hyp-connect/api/getGamePackages?launcher_id=VYTpXlbWo8",
                 game_id = "hkrpg_global",
-                title = editions_locales.global
+                title = editions_locales.global,
+                data_folder = "StarRail_Data"
             },
 
             china = {
                 api_url = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGamePackages?launcher_id=jGHBHlcOq1",
                 game_id = "hkrpg_cn",
-                title = editions_locales.china
+                title = editions_locales.china,
+                data_folder = "StarRail_Data"
             }
         }
     },
@@ -82,13 +88,15 @@ local games = {
             global = {
                 api_url = "https://sg-hyp-api.hoyoverse.com/hyp/hyp-connect/api/getGamePackages?launcher_id=VYTpXlbWo8",
                 game_id = "bh3_global",
-                title = editions_locales.global
+                title = editions_locales.global,
+                data_folder = "BH3_Data"
             },
 
             china = {
                 api_url = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGamePackages?launcher_id=jGHBHlcOq1",
                 game_id = "bh3_cn",
-                title = editions_locales.china
+                title = editions_locales.china,
+                data_folder = "BH3_Data"
             }
         }
     }
@@ -224,6 +232,7 @@ for game_name, game in pairs(games) do
     for edition_name, edition in pairs(game.editions) do
         lib[game_name][edition_name] = {
             title = edition.title,
+            data_folder = edition.data_folder,
 
             api = {
                 get = function()
