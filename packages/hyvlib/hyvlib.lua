@@ -286,8 +286,16 @@ for game_name, game in pairs(games) do
 
     for edition_name, edition in pairs(game.editions) do
         local base_path = path.persist_dir(edition.game_id)
+
+        dbg(base_path)
+
         local data_path = path.join(base_path, edition.entries.data_folder)
+
+        dbg(data_path)
+
         local version_path = path.join(data_path, edition.entries.version_file)
+
+        dbg(version_path)
 
         lib[game_name][edition_name] = {
             title = edition.title,
