@@ -35,14 +35,20 @@ local games = {
                 api_url = "https://sg-hyp-api.hoyoverse.com/hyp/hyp-connect/api/getGamePackages?launcher_id=VYTpXlbWo8",
                 game_id = "hk4e_global",
                 title = editions_locales.global,
-                data_folder = "GenshinImpact_Data"
+                entries = {
+                    data_folder = "GenshinImpact_Data",
+                    version_file = "globalgamemanagers"
+                } 
             },
 
             china = {
                 api_url = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGamePackages?launcher_id=jGHBHlcOq1",
                 game_id = "hk4e_cn",
                 title = editions_locales.china,
-                data_folder = "YuanShen_Data"
+                entries = {
+                    data_folder = "YuanShen_Data",
+                    version_file = "globalgamemanagers"
+                }
             }
         }
     },
@@ -53,14 +59,20 @@ local games = {
                 api_url = "https://sg-hyp-api.hoyoverse.com/hyp/hyp-connect/api/getGamePackages?launcher_id=VYTpXlbWo8",
                 game_id = "nap_global",
                 title = editions_locales.global,
-                data_folder = "ZenlessZoneZero_Data"
+                entries = {
+                    data_folder = "ZenlessZoneZero_Data",
+                    version_file = "globalgamemanagers"
+                }
             },
 
             china = {
                 api_url = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGamePackages?launcher_id=jGHBHlcOq1",
                 game_id = "nap_cn",
                 title = editions_locales.china,
-                data_folder = "ZenlessZoneZero_Data"
+                entries = {
+                    data_folder = "ZenlessZoneZero_Data",
+                    version_file = "globalgamemanagers"
+                }
             }
         }
     },
@@ -71,14 +83,20 @@ local games = {
                 api_url = "https://sg-hyp-api.hoyoverse.com/hyp/hyp-connect/api/getGamePackages?launcher_id=VYTpXlbWo8",
                 game_id = "hkrpg_global",
                 title = editions_locales.global,
-                data_folder = "StarRail_Data"
+                entries = {
+                    data_folder = "StarRail_Data",
+                    version_file = "globalgamemanagers"
+                }
             },
 
             china = {
                 api_url = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGamePackages?launcher_id=jGHBHlcOq1",
                 game_id = "hkrpg_cn",
                 title = editions_locales.china,
-                data_folder = "StarRail_Data"
+                entries = {
+                    data_folder = "StarRail_Data",
+                    version_file = "globalgamemanagers"
+                }
             }
         }
     },
@@ -89,14 +107,20 @@ local games = {
                 api_url = "https://sg-hyp-api.hoyoverse.com/hyp/hyp-connect/api/getGamePackages?launcher_id=VYTpXlbWo8",
                 game_id = "bh3_global",
                 title = editions_locales.global,
-                data_folder = "BH3_Data"
+                entries = {
+                    data_folder = "BH3_Data",
+                    version_file = "globalgamemanagers"
+                }
             },
 
             china = {
                 api_url = "https://hyp-api.mihoyo.com/hyp/hyp-connect/api/getGamePackages?launcher_id=jGHBHlcOq1",
                 game_id = "bh3_cn",
                 title = editions_locales.china,
-                data_folder = "BH3_Data"
+                entries = {
+                    data_folder = "BH3_Data",
+                    version_file = "globalgamemanagers"
+                }
             }
         }
     }
@@ -136,8 +160,7 @@ type Patch = {
 
 local api_cache = {}
 
--- hyvlib.api.get()
--- Try to fetch the HYVse API
+-- Try to fetch the HYVse API.
 local function api_get(url: string, id: string): Api?
     local semver = import("semver")
     local iter = import("iterable")
@@ -224,21 +247,66 @@ local function api_get(url: string, id: string): Api?
     }
 end
 
+-- Try to parse the game version from its file.
+local function parse_game_version(version_file_path: string): Semver?
+    if not fs.exists(game_folder) then
+        return nil
+    end
+
+    local handle = fs.open(version_file_path)
+
+    fs.seek(handle, 4500)
+
+    local buf = fs.read(handle, 500)
+
+    fs.close(handle)
+
+    local function is_digit(byte: number): boolean
+        return byte >= 48 and byte <= 57
+    end
+
+    for i = 1, 496 do
+        -- x.y.z
+        if is_digit(buf[i]) and is_digit(buf[i + 2]) and is_digit(buf[i + 4]) and buf[i + 1] == 46 and buf[i + 3] == 46 then
+            return {
+                major = buf[i] - 48,
+                minor = buf[i + 2] - 48,
+                patch = buf[i + 4] - 48
+            }
+        end
+    end
+
+    return nil
+end
+
 local lib = {}
 
 for game_name, game in pairs(games) do
     lib[game_name] = {}
 
     for edition_name, edition in pairs(game.editions) do
+        local base_path = path.persist_dir(edition.game_id)
+        local data_path = path.join(base_path, edition.entries.data_folder)
+        local version_path = path.join(data_path, edition.entries.version_file)
+
         lib[game_name][edition_name] = {
             title = edition.title,
-            data_folder = edition.data_folder,
+
+            paths = {
+                base_folder = base_path,
+                data_folder = data_path,
+                version_file = version_path
+            },
 
             api = {
                 get = function()
                     return api_get(edition.api_url, edition.game_id)
                 end
-            }
+            },
+
+            parse_version = function()
+                return parse_game_version(version_path)
+            end
         }
     end
 end
