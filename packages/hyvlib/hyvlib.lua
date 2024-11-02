@@ -37,7 +37,8 @@ local games = {
                 title = editions_locales.global,
                 entries = {
                     data_folder = "GenshinImpact_Data",
-                    version_file = "globalgamemanagers"
+                    version_file = "globalgamemanagers",
+                    game_binary = "GenshinImpact.exe"
                 } 
             },
 
@@ -47,7 +48,8 @@ local games = {
                 title = editions_locales.china,
                 entries = {
                     data_folder = "YuanShen_Data",
-                    version_file = "globalgamemanagers"
+                    version_file = "globalgamemanagers",
+                    game_binary = "YuanShen.exe"
                 }
             }
         }
@@ -61,7 +63,8 @@ local games = {
                 title = editions_locales.global,
                 entries = {
                     data_folder = "ZenlessZoneZero_Data",
-                    version_file = "globalgamemanagers"
+                    version_file = "globalgamemanagers",
+                    game_binary = "ZenlessZoneZero.exe"
                 }
             },
 
@@ -71,7 +74,8 @@ local games = {
                 title = editions_locales.china,
                 entries = {
                     data_folder = "ZenlessZoneZero_Data",
-                    version_file = "globalgamemanagers"
+                    version_file = "globalgamemanagers",
+                    game_binary = "ZenlessZoneZero.exe"
                 }
             }
         }
@@ -85,7 +89,8 @@ local games = {
                 title = editions_locales.global,
                 entries = {
                     data_folder = "StarRail_Data",
-                    version_file = "globalgamemanagers"
+                    version_file = "globalgamemanagers",
+                    game_binary = "StarRail.exe"
                 }
             },
 
@@ -95,7 +100,8 @@ local games = {
                 title = editions_locales.china,
                 entries = {
                     data_folder = "StarRail_Data",
-                    version_file = "globalgamemanagers"
+                    version_file = "globalgamemanagers",
+                    game_binary = "StarRail.exe"
                 }
             }
         }
@@ -109,7 +115,8 @@ local games = {
                 title = editions_locales.global,
                 entries = {
                     data_folder = "BH3_Data",
-                    version_file = "globalgamemanagers"
+                    version_file = "globalgamemanagers",
+                    game_binary = "BH3.exe"
                 }
             },
 
@@ -119,7 +126,8 @@ local games = {
                 title = editions_locales.china,
                 entries = {
                     data_folder = "BH3_Data",
-                    version_file = "globalgamemanagers"
+                    version_file = "globalgamemanagers",
+                    game_binary = "BH3.exe"
                 }
             }
         }
@@ -285,17 +293,19 @@ for game_name, game in pairs(games) do
     lib[game_name] = {}
 
     for edition_name, edition in pairs(game.editions) do
-        local base_path = path.persist_dir(edition.game_id)
-        local data_path = path.join(base_path, edition.entries.data_folder)
+        local base_path    = path.persist_dir(edition.game_id)
+        local data_path    = path.join(base_path, edition.entries.data_folder)
         local version_path = path.join(data_path, edition.entries.version_file)
+        local game_binary  = path.join(base_path, edition.entries.game_binary)
 
         lib[game_name][edition_name] = {
             title = edition.title,
 
             paths = {
-                base_folder = base_path,
-                data_folder = data_path,
-                version_file = version_path
+                base_folder  = base_path,
+                data_folder  = data_path,
+                version_file = version_path,
+                game_binary  = game_binary
             },
 
             api = {
