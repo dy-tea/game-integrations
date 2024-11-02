@@ -126,7 +126,7 @@ type Patch = {
     voiceovers: { Voiceover }
 }
 
-local api_cache = nil
+local api_cache = {}
 
 -- hyvlib.api.get()
 -- Try to fetch the HYVse API
