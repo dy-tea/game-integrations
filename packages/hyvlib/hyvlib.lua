@@ -132,7 +132,7 @@ local api_cache = nil
 -- Try to fetch the HYVse API
 local function api_get(url: string, id: string): Api?
     local semver = import("semver")
-    local iter = import("iter")
+    local iter = import("iterable")
 
     if not api_cache[url] then
         local response = net.fetch(url)
