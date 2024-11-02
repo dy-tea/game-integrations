@@ -4,9 +4,6 @@ return {
     editions = function()
         local hyvlib = import("hyvlib").hyvlib
 
-        dbg(hyvlib)
-        dbg(hyvlib.hsr.global.api.get())
-
         local editions = {}
 
         for name, edition in pairs(hyvlib.hsr) do
@@ -25,6 +22,24 @@ return {
 
     game = {
         get_status = function(edition: string)
+            local hyvlib = import("hyvlib").hyvlib
+
+            if not hyvlib.hsr[edition] then
+                error(`invalid edition: {edition}`)
+            end
+
+            local latest = hyvlib.hsr[edition].api.get().version
+
+            local result, current = pcall(hyvlib.hsr[edition].parse_version)
+
+            if not result or not current then
+                return "not-installed"
+            end
+
+            if latest > current then
+                return "update-required"
+            end
+
             return "installed"
         end,
 
@@ -33,11 +48,6 @@ return {
         end,
 
         get_launch_info = function(edition: string)
-            local hyvlib = import("hyvlib").hyvlib
-
-            dbg(hyvlib)
-            dbg(hyvlib.hsr.global.api.get())
-
             return {
                 status = "disabled",
                 hint = {
