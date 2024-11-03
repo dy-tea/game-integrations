@@ -28,9 +28,10 @@ return {
                 error(`invalid edition: {edition}`)
             end
 
-            local latest = hyvlib.hsr[edition].api.get().version
+            local game = hyvlib.hsr[edition]
 
-            local result, current = pcall(hyvlib.hsr[edition].parse_version)
+            local latest = game.api.get().version
+            local result, current = pcall(game.parse_version)
 
             if not result or not current then
                 return "not-installed"
@@ -84,13 +85,13 @@ return {
                             perform = function(updater)
                                 local temp_folder = path.temp_dir()
 
-                                local expected_total = iter(api.segments)
+                                local expected_total = iter(clone(api.segments))
                                     .map(function(segment) return segment.download_size end)
                                     .sum()
 
                                 local downloaded_total = 0
 
-                                for _, segment in iter(api.segments) do
+                                for _, segment in iter(clone(api.segments)) do
                                     local segment_name = path.file_name(segment.url)
 
                                     downloader.download(segment.url, {
@@ -145,7 +146,7 @@ return {
                             perform = function(updater)
                                 local temp_folder = path.temp_dir()
 
-                                local archives = iter(api.segments)
+                                local archives = iter(clone(api.segments))
                                     .map(function(segment)
                                         local segment_name = path.file_name(segment.url)
                                         local segment_path = path.join(temp_folder, segment_name)
@@ -159,7 +160,7 @@ return {
                                     end)
                                     .collect()
 
-                                local expected_total = iter(archives)
+                                local expected_total = iter(clone(archives))
                                     .map(function(info)
                                         return iter(archive.entries(info.handle))
                                             .map(function(entry) return entry.size end)
