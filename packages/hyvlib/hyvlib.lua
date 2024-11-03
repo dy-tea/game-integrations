@@ -183,10 +183,16 @@ local function api_get(url: string, id: string): Api?
         api_cache[url] = str.decode(str.from_bytes(response.body), "json")
     end
 
+    dbg(url)
+    dbg(id)
+    dbg(api_cache[url])
+
     local scope = iter(api_cache[url].data.game_packages)
         .find(function(game)
             return string.find(game.game.biz, id) or string.find(game.game.id, id)
         end)
+
+    dbg(scope)
 
     if not scope then
         return nil
