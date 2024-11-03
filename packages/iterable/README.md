@@ -29,6 +29,10 @@ type Item<T> = { key = any, value = T }
 type Iterable<T> = { next: () -> Item<T>?, ... }
 ```
 
+> Note: internally iterators mutate input tables, so you likely want to
+> clone them before building an iterator: use `iter(clone(your_table))`
+> instead of just `iter(your_table)`.
+
 ### Iterator in loops
 
 Iterables implement special `__iter` metamethod to work inside of for loops.
