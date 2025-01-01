@@ -1,0 +1,13 @@
+{
+    "format": 1,
+    "title": {
+        "en": "Anime Games Launcher Standard Components Registry",
+        "ru": "Стандартный реестр компонентов Anime Games Launcher"
+    },
+    "components": {
+        "runtime": [
+            "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/components/wine/manifest.json",
+            "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/components/dxvk/manifest.json"
+        ]
+    }
+}
