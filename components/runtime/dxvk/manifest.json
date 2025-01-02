@@ -5,7 +5,7 @@
         "title": "DXVK",
         "description": {
             "en": "Set of libraries providing Vulkan compatibility for DirectX games",
-            "ru": "Набор библиотек, добавляющих поддержку Vulkan для игра на DirectX"
+            "ru": "Набор библиотек, добавляющих поддержку Vulkan для игр на DirectX"
         },
         "category": "runtime"
     },
