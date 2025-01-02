@@ -6,8 +6,8 @@
     },
     "components": {
         "runtime": [
-            "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/components/wine/manifest.json",
-            "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/components/dxvk/manifest.json"
+            "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/components/runtime/wine/manifest.json",
+            "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/components/runtime/dxvk/manifest.json"
         ]
     }
 }
