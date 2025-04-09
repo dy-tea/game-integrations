@@ -126,8 +126,6 @@ return {
                                 continue_downloading = true,
 
                                 progress = function(current, total, diff)
-                                    downloaded_total += diff
-
                                     updater({
                                         progress = {
                                             current = current,
