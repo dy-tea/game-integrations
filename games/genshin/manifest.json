@@ -21,7 +21,7 @@
         "url": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/genshin/package.json",
         "output": "integration",
         "runtime": {
-            "supported_platforms": [
+            "platforms": [
                 "x86_64-linux"
             ]
         }
