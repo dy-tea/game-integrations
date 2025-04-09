@@ -1,7 +1,12 @@
+type Variant = {
+    platform: string,
+    edition: string
+}
+
 return {
     standard = 1,
 
-    editions = function()
+    editions = function(platform: string)
         return {
             {
                 name = "global",
@@ -13,20 +18,16 @@ return {
         }
     end,
 
-    components = function()
-        return {}
-    end,
-
     game = {
-        get_status = function(edition: string)
+        get_status = function(variant: Variant)
             return "installed"
         end,
 
-        get_diff = function(edition: string)
+        get_diff = function(variant: Variant)
             return nil
         end,
 
-        get_launch_info = function(edition: string)
+        get_launch_info = function(variant: Variant)
             return {
                 status = "disabled",
                 hint = {
@@ -35,6 +36,18 @@ return {
                 },
                 binary = ""
             }
+        end
+    },
+
+    settings = {
+        get_property = function(name: string)
+            return nil
+        end,
+
+        set_property = function(name: string, value: any) end,
+
+        get_layout = function(variant: Variant)
+            return {}
         end
     }
 }

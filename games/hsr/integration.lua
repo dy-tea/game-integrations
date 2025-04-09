@@ -1,7 +1,12 @@
+type Variant = {
+    platform: string,
+    edition: string
+}
+
 return {
     standard = 1,
 
-    editions = function()
+    editions = function(platform: string)
         local hyvlib = import("hyvlib").hyvlib
 
         local editions = {}
@@ -16,19 +21,15 @@ return {
         return editions
     end,
 
-    components = function()
-        return {}
-    end,
-
     game = {
-        get_status = function(edition: string)
+        get_status = function(variant: Variant)
             local hyvlib = import("hyvlib").hyvlib
 
-            if not hyvlib.hsr[edition] then
-                error(`invalid edition: {edition}`)
+            if not hyvlib.hsr[variant.edition] then
+                error(`invalid edition: {variant.edition}`)
             end
 
-            local game = hyvlib.hsr[edition]
+            local game = hyvlib.hsr[variant.edition]
 
             local latest = game.api.get().version
             local result, current = pcall(game.parse_version)
@@ -44,15 +45,15 @@ return {
             return "installed"
         end,
 
-        get_diff = function(edition: string)
+        get_diff = function(variant: Variant)
             local iter = import("iterable")
             local hyvlib = import("hyvlib").hyvlib
 
-            if not hyvlib.hsr[edition] then
-                error(`invalid edition: {edition}`)
+            if not hyvlib.hsr[variant.edition] then
+                error(`invalid edition: {variant.edition}`)
             end
 
-            local game = hyvlib.hsr[edition]
+            local game = hyvlib.hsr[variant.edition]
 
             local api = game.api.get()
             local result, current = pcall(game.parse_version)
@@ -212,7 +213,7 @@ return {
             return nil
         end,
 
-        get_launch_info = function(edition: string)
+        get_launch_info = function(variant: Variant)
             return {
                 status = "disabled",
                 hint = {
@@ -221,6 +222,18 @@ return {
                 },
                 binary = ""
             }
+        end
+    },
+
+    settings = {
+        get_property = function(name: string)
+            return nil
+        end,
+
+        set_property = function(name: string, value: any) end,
+
+        get_layout = function(variant: Variant)
+            return {}
         end
     }
 }
