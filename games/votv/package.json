@@ -5,6 +5,9 @@
             "Nikita Podvirnyi <krypt0nn@vk.com>"
         ]
     },
+    "inputs": {
+        "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.lua"
+    },
     "outputs": {
         "integration": {
             "uri": "integration.luau",
