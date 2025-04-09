@@ -11,10 +11,12 @@ return {
 
     editions = function(platform: string)
         return {
-            name = "default",
-            title = {
-                en = "Default",
-                ru = "Стандартная"
+            {
+                name = "default",
+                title = {
+                    en = "Default",
+                    ru = "Стандартная"
+                }
             }
         }
     end,
