@@ -1,0 +1,29 @@
+{
+    "standard": 1,
+    "game": {
+        "title": "Voices of the Void",
+        "description": {
+            "en": "WIP implementation used for testing",
+            "ru": "Реализация пакета, используемая для тестов"
+        },
+        "developer": "EternityDev (MrDrNose)",
+        "publisher": "EternityDev (MrDrNose)",
+        "images": {
+            "icon": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/icon.png",
+            "poster": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/poster.jpg",
+            "background": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/background.jpg",
+            "slides": [
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/slide1.jpg"
+            ]
+        }
+    },
+    "package": {
+        "url": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/package.json",
+        "output": "integration",
+        "runtime": {
+            "platforms": [
+                "x86_64-linux"
+            ]
+        }
+    }
+}
