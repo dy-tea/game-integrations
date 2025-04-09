@@ -15,11 +15,15 @@
         },
         {
             "url": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/hsr/manifest.json",
-            "featured": false
+            "featured": true
         },
         {
             "url": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/hi3/manifest.json",
             "featured": false
+        },
+        {
+            "url": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/manifest.json",
+            "featured": true
         }
     ]
 }
