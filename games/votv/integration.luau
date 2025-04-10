@@ -84,6 +84,8 @@ return {
 
             local info = last_game_version()
 
+            dbg(info)
+
             local archive_path = path.join(path.temp_dir(), `votv_{info.version}.7z`)
 
             return {
@@ -121,6 +123,8 @@ return {
                         },
 
                         perform = function(updater)
+                            dbg(info)
+
                             downloader.download(info.url, {
                                 output_file = archive_path,
                                 continue_downloading = true,
