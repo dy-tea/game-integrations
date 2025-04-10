@@ -18,7 +18,7 @@ local game_versions = {
 
 local data_path = path.persist_dir("voices_of_the_void")
 
-local game_path = path.join(data_page, "game")
+local game_path = path.join(data_path, "game")
 local game_version_path = path.join(game_path, ".version")
 
 function last_game_version(): Version
@@ -120,7 +120,7 @@ return {
                             ru = "Скачать архивы с файлами игры"
                         },
 
-                        perform = function(progress)
+                        perform = function(updater)
                             downloader.download(info.url, {
                                 output_file = archive_path,
                                 continue_downloading = true,
