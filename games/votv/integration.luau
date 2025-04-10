@@ -223,7 +223,7 @@ return {
 
             local versions_enum = {}
 
-            for info in iter(clone(game_versions)) do
+            for _, info in iter(clone(game_versions)) do
                 versions_enum[info.version] = info.title
             end
 
