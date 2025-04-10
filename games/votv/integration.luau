@@ -28,6 +28,8 @@ function last_game_version(): Version
 end
 
 function get_game_version(): Version | nil
+    dbg(game_version_path, fs.exists(game_version_path))
+
     if not fs.exists(game_version_path) then
         return nil
     end
