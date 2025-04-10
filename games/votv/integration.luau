@@ -219,7 +219,37 @@ return {
         set_property = function(name: string, value: any) end,
 
         get_layout = function(variant: Variant)
-            return {}
+            local versions_enum = {}
+
+            for info in iter(clone(game_versions)) do
+                versions_enum[info.version] = info.title
+            end
+
+            return {
+                {
+                    title = {
+                        en = "Game",
+                        ru = "Игра"
+                    },
+
+                    entries = {
+                        {
+                            name = "game.version",
+
+                            title = {
+                                en = "Game version",
+                                ru = "Версия игры"
+                            },
+
+                            entry = {
+                                format = "enum",
+                                values = versions_enum,
+                                selected = last_game_version().version
+                            }
+                        }
+                    }
+                }
+            }
         end
     }
 }
