@@ -24,12 +24,10 @@ local game_version_path = path.join(game_path, ".version")
 function last_game_version(): Version
     local iter = import("iterable")
 
-    return iter(game_versions).next().value
+    return iter(clone(game_versions)).next().value
 end
 
 function get_game_version(): Version | nil
-    dbg(game_version_path, fs.exists(game_version_path))
-
     if not fs.exists(game_version_path) then
         return nil
     end
@@ -38,11 +36,7 @@ function get_game_version(): Version | nil
 
     local version = str.from_bytes(fs.read_file(game_version_path))
 
-    dbg(version)
-
-    for _, info in iter(game_versions) do
-        dbg(info)
-
+    for _, info in iter(clone(game_versions)) do
         if version == info.version then
             return info
         end
