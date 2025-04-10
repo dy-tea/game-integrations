@@ -1,6 +1,3 @@
--- Direct download links are taken from here: https://archive.org/details/votv-archive
--- Pre-Alpha 0.8.2: https://archive.org/download/votv-archive/pa0082_0012.7z
-
 type Variant = {
     platform: string,
     edition: string
@@ -12,8 +9,12 @@ type Version = {
     url: string
 }
 
+-- Direct download links are taken from here: https://archive.org/details/votv-archive
 local game_versions = {
-    { version = "pa0082_0012", title = "Pre-Alpha 0.8.2b", url = "https://archive.org/download/votv-archive/pa0082_0012.7z" }
+    { version = "pa0082_0012", title = "Pre-Alpha 0.8.2b", url = "https://archive.org/download/votv-archive/pa0082_0012.7z" },
+    { version = "pa0081_0008", title = "Pre-Alpha 0.8.1",  url = "https://archive.org/download/votv-archive/pa0081_0008.7z" },
+    { version = "pa08_0017",   title = "Pre-Alpha 0.8.0",  url = "https://archive.org/download/votv-archive/pa08_0017.7z" },
+    { version = "pa07_0011",   title = "Pre-Alpha 0.7.0",  url = "https://archive.org/download/votv-archive/pa07_0011.7z" }
 }
 
 local data_path = path.persist_dir("voices_of_the_void")
