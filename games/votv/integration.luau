@@ -219,6 +219,8 @@ return {
         set_property = function(name: string, value: any) end,
 
         get_layout = function(variant: Variant)
+            local iter = import("iterable")
+
             local versions_enum = {}
 
             for info in iter(clone(game_versions)) do
