@@ -36,7 +36,11 @@ function get_game_version(): Version | nil
 
     local version = str.from_bytes(fs.read_file(game_version_path))
 
+    dbg(version)
+
     for _, info in iter(game_versions) do
+        dbg(info)
+
         if version == info.version then
             return info
         end
@@ -84,8 +88,6 @@ return {
 
             local info = last_game_version()
 
-            dbg(info)
-
             local archive_path = path.join(path.temp_dir(), `votv_{info.version}.7z`)
 
             return {
@@ -123,8 +125,6 @@ return {
                         },
 
                         perform = function(updater)
-                            dbg(info)
-
                             downloader.download(info.url, {
                                 output_file = archive_path,
                                 continue_downloading = true,
