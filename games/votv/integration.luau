@@ -24,7 +24,7 @@ local game_version_path = path.join(game_path, ".version")
 function last_game_version(): Version
     local iter = import("iterable")
 
-    return iter(game_versions).next()
+    return iter(game_versions).next().value
 end
 
 function get_game_version(): Version | nil
