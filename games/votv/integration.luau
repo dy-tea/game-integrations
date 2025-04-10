@@ -22,13 +22,13 @@ local data_path = path.persist_dir("voices_of_the_void")
 local game_path = path.join(data_path, "game")
 local game_version_path = path.join(game_path, ".version")
 
-function last_game_version(): Version
+local function last_game_version(): Version
     local iter = import("iterable")
 
     return iter(clone(game_versions)).next().value
 end
 
-function get_game_version(): Version | nil
+local function get_game_version(): Version | nil
     if not fs.exists(game_version_path) then
         return nil
     end
@@ -46,11 +46,11 @@ function get_game_version(): Version | nil
     return nil
 end
 
-function set_game_version(version: string)
+local function set_game_version(version: string)
     fs.write_file(game_version_path, str.to_bytes(version))
 end
 
-function delete_game()
+local function delete_game()
     pcall(fs.remove_dir, game_path)
 end
 
