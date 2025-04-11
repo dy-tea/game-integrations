@@ -139,9 +139,9 @@ return {
 
                 if name == "wine.selected" then
                     settings.wine.selected = value
-                else if name == "dxvk.selected" then
+                elseif name == "dxvk.selected" then
                     settings.dxvk.selected = value
-                else if name == "wine.groups.wine_staging_tkg" then
+                elseif name == "wine.groups.wine_staging_tkg" then
                     settings.wine.groups.wine_staging_tkg = value
                 else
                     return false
