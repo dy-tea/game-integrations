@@ -133,7 +133,8 @@ return {
                 return settings
             end,
 
-            set_property = function(name: string, value: any)
+            -- Return true if property is set, otherwise false.
+            set_property = function(name: string, value: any): boolean
                 local settings = get_settings(game_name)
 
                 if name == "wine.selected" then
@@ -142,9 +143,13 @@ return {
                     settings.dxvk.selected = value
                 else if name == "wine.groups.wine_staging_tkg" then
                     settings.wine.groups.wine_staging_tkg = value
+                else
+                    return false
                 end
 
                 set_settings(game_name, settings)
+
+                return true
             end,
 
             get_layout = function()
