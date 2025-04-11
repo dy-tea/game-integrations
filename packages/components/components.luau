@@ -34,6 +34,8 @@ local function get_wine_versions()
                 versions = str.decode(str.from_bytes(fs.read_file(group.src)), "json")
             })
         end
+
+        dbg(wine_versions_cache)
     end
 
     return clone(wine_versions_cache)
@@ -101,6 +103,8 @@ local function get_settings(game_name: string | nil): Settings
             settings[game_name].wine.selected = default_wine_version()
         end
     end
+
+    dbg(settings[game_name])
 
     return settings[game_name]
 end
