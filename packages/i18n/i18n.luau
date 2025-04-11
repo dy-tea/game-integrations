@@ -26,7 +26,7 @@ local function get_translations(name: string): table | nil
     return locales_cache[name]
 end
 
-return function(name: string, language: string, options: table | nil): string | nil
+return function(name: string, options: table | nil): string | nil
     local translations = get_translations(name)
 
     if not options or not translations then
