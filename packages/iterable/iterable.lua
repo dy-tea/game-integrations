@@ -1,4 +1,4 @@
--- iterable v1.2.0
+-- iterable v1.3.0
 -- Copyright (C) 2024  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,8 @@ type Iterable<T> = {
     fold: <F>(F, (F, T) -> F) -> F,
     find: ((T) -> boolean) -> Item<T>?,
     any: ((T) -> boolean) -> boolean,
-    chain: (Iterable<T> | table) -> Iterable<T>,
+    chain: (Iterable<T> | {T}) -> Iterable<T>,
+    flatten: <F>() -> Iterable<F>,
     partition: ((T) -> boolean) -> (Iterable<T>, Iterable<T>),
     select: ((T, T) -> boolean) -> Item<T>?,
     count: () -> number,
@@ -181,7 +182,7 @@ local function iter<T>(table: {T}): Iterable<table>
     --
     -- print(iter({ 1, 2 }).chain({ 3, 4, 5 }).count() == 5)
     -- print(iter({ a = 1, b = 2 }).chain({ b = 3 }).count() == 2)
-    local function chain(iterator: Iterable<T> | table): Iterable<T>
+    local function chain(iterator: Iterable<T> | {T}): Iterable<T>
         if not iterator.next then
             iterator = iter(iterator)
         end
@@ -199,6 +200,32 @@ local function iter<T>(table: {T}): Iterable<table>
         end
 
         return iter(table)
+    end
+
+    -- print(iter({ 1, { 2, 3 }, 4, 5 }).flatten().count() == 5)
+    local function flatten<F>(): Iterable<F>
+        local new_table = {}
+        local flatten_tables = {}
+
+        local item = next()
+
+        while item do
+            if type(item.value) == "table" then
+                flatten_tables[item.key] = item.value
+            else
+                new_table[item.key] = item.value
+            end
+
+            item = next()
+        end
+
+        table = new_table
+
+        for _, flatten_table in pairs(flatten_tables) do
+            chain(flatten_table)
+        end
+
+        return iter(new_table)
     end
 
     -- local even, odd = iter({ 1, 2, 3, 4 }).partition(function(num) return num % 2 == 0 end)
@@ -316,6 +343,7 @@ local function iter<T>(table: {T}): Iterable<table>
         find = find,
         any = any,
         chain = chain,
+        flatten = flatten,
         partition = partition,
         select = select,
         count = count,

@@ -1,4 +1,4 @@
-# Iterable v1.2.0
+# Iterable v1.3.0
 
 Advanced iterators syntax implementation for luau.
 
@@ -200,7 +200,7 @@ local has_even = iter({ 1, 2, 3 }).any(function(num) return num % 2 == 0 end)
 print(has_even)
 ```
 
-### `chain(Iterable<T> | table): Iterable<T>`
+### `chain(Iterable<T> | {T}): Iterable<T>`
 
 Chain two iterators together.
 
@@ -221,6 +221,24 @@ local iter = import("iterable")
 for k, v in iter({ a = 1, b = 2, 3, 4 }).chain({ b = 5, c = 6, 7 }) do
     print(`[{k}] = {v}`)
 end
+```
+
+### `flatten<F>(): Iterable<F>`
+
+Flatten two-dimensional array into one dimension.
+
+```luau
+local iter = import("iterable")
+
+local matrix = {
+    { 1, 2, 3 },
+    { 4, 5, 6 },
+    7,
+    8,
+    9
+}
+
+print(iter(matrix).flatten().count()) -- 9
 ```
 
 ### `partition((T) -> boolean): (Iterable<T>, Iterable<T>)`
