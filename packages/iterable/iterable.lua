@@ -1,16 +1,16 @@
--- iterable v1.0.0
+-- iterable v1.1.0
 -- Copyright (C) 2024  Nikita Podvirnyi <krypt0nn@vk.com>
--- 
+--
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
 -- the Free Software Foundation, either version 3 of the License, or
 -- (at your option) any later version.
--- 
+--
 -- This program is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 -- GNU General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -20,10 +20,13 @@ type Item<T> = {
 }
 
 type Iterable<T> = {
+    cloned: () -> Iterable<T>,
     next: () -> Item<T>?,
+    first: () -> T?,
+    last: () -> T?,
     map: <F>((T) -> F) -> Iterator<F>,
     filter: ((T) -> boolean) -> Iterator<T>,
-    for_each: ((T) -> ()) -> Iterator<T>,
+    for_each: ((Item<T>) -> ()) -> Iterator<T>,
     fold: <F>(F, (F, T) -> F) -> F,
     find: ((T) -> boolean) -> Item<T>?,
     any: ((T) -> boolean) -> boolean,
@@ -38,6 +41,12 @@ type Iterable<T> = {
 }
 
 local function iter<T>(table: {T}): Iterable<table>
+    -- local a = { 1, 2, 3 }
+    -- print(iter(a).cloned().sum() == iter(a).sum())
+    local function cloned(): Iterable<T>
+        return iter(clone(table))
+    end
+
     -- print(iter({ 1 }).next().value == 1)
     local function next(): Item<T>?
         for k, v in ipairs(table) do
@@ -56,6 +65,34 @@ local function iter<T>(table: {T}): Iterable<table>
                 key = k,
                 value = v
             }
+        end
+
+        return nil
+    end
+
+    -- print(iter({ 1, 2, 3 }).first() == 1)
+    local function first(): T?
+        local item = next()
+
+        if not item then
+            return nil
+        else
+            return item.value
+        end
+    end
+
+    -- print(iter({ 1, 2, 3 }).last() == 3)
+    local function last(): T?
+        local item = next()
+
+        while item do
+            local next_item = next()
+
+            if not next_item then
+                return item.value
+            end
+
+            item = next_item
         end
 
         return nil
@@ -91,12 +128,12 @@ local function iter<T>(table: {T}): Iterable<table>
         return iter(filtered)
     end
 
-    -- iter({ 1, 2, 3 }).for_each(function(num) print(num) end)
-    local function for_each(callback: (T) -> ()): Iterator<T>
+    -- iter({ 1, 2, 3 }).for_each(function(item) print(item.value) end)
+    local function for_each(callback: (Item<T>) -> ()): Iterator<T>
         local item = next()
 
         while item do
-            callback(item.value)
+            callback(item)
 
             item = next()
         end
@@ -139,7 +176,7 @@ local function iter<T>(table: {T}): Iterable<table>
 
     -- This method uses keys of the chaining iterator to update
     -- the original iterator.
-    -- 
+    --
     -- print(iter({ 1, 2 }).chain({ 3, 4, 5 }).count() == 5)
     -- print(iter({ a = 1, b = 2 }).chain({ b = 3 }).count() == 2)
     local function chain(iterator: Iterable<T> | table): Iterable<T>
@@ -236,7 +273,10 @@ local function iter<T>(table: {T}): Iterable<table>
     end
 
     local iterator = {
+        cloned = cloned,
         next = next,
+        first = first,
+        last = last,
         map = map,
         filter = filter,
         for_each = for_each,
