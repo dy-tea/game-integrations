@@ -1,4 +1,4 @@
--- iterable v1.1.0
+-- iterable v1.2.0
 -- Copyright (C) 2024  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -36,7 +36,9 @@ type Iterable<T> = {
     count: () -> number,
     min: () -> Item<T>?,
     max: () -> Item<T>?,
-    sum: () -> T?,
+    sum: () -> T,
+    skip: (n: number) -> Iterable<T>,
+    take: (len: number) -> Iterable<T>,
     collect: () -> {T}
 }
 
@@ -266,6 +268,36 @@ local function iter<T>(table: {T}): Iterable<table>
         return fold(init.value, function(sum, item) return sum + item end)
     end
 
+    -- print(iter({ 1, 2, 3 }).skip(2).sum() == 3)
+    local function skip(n: number): Iterable<T>
+        while n > 0 do
+            next()
+
+            n = n - 1
+        end
+
+        return iter(table)
+    end
+
+    -- print(iter({ 1, 2, 3 }).take(2).sum() == 3)
+    local function take(len: number): Iterable<T>
+        local new_table = {}
+
+        while len > 0 do
+            local item = next()
+
+            if not item then
+                break
+            end
+
+            new_table[item.key] = item.value
+
+            len = len - 1
+        end
+
+        return iter(new_table)
+    end
+
     -- local table = { 1, 2, 3 }
     -- print(iter(table).collect() == table)
     local function collect(): {T}
@@ -290,6 +322,8 @@ local function iter<T>(table: {T}): Iterable<table>
         min = min,
         max = max,
         sum = sum,
+        skip = skip,
+        take = take,
         collect = collect
     }
 
