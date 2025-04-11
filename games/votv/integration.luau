@@ -276,9 +276,9 @@ return {
                 }
             }
 
-            table.insert(layout, get_components_settings().get_layout())
-
-            return layout
+            return iter(layout)
+                .chain(get_components_settings().get_layout())
+                .collect()
         end
     }
 }
