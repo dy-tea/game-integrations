@@ -58,7 +58,7 @@ type Settings = {
 
 local function get_settings(game_name: string | nil): Settings
     if not path.exists(settings_file_path) then
-        fs.write(settings_file_path, str.encode({}, "json"))
+        fs.write_file(settings_file_path, str.encode({}, "json"))
     end
 
     local settings = str.decode(str.from_bytes(fs.read_file(settings_file_path)), "json")
