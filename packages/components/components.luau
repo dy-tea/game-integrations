@@ -160,6 +160,8 @@ return {
             end,
 
             get_layout = function()
+                local iter = import("iterable")
+
                 local settings = get_settings(game_name)
 
                 return {
