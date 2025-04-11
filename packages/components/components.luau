@@ -56,7 +56,7 @@ type Settings = {
 
 local function get_settings(game_name: string | nil): Settings
     if not path.exists(settings_file_path) then
-        fs.write(settings_file_path, str.encode({}, "json"))
+        fs.write(settings_file_path, "{}")
     end
 
     local settings = str.decode(str.from_bytes(fs.read_file(settings_file_path)), "json")
@@ -66,7 +66,7 @@ local function get_settings(game_name: string | nil): Settings
     end
 
     -- To prevent long names abuse
-    local game_name = str.encode(hash.calc(game_name, "seahash"), "base32")
+    game_name = str.encode(hash.calc(game_name, "seahash"), "base32")
 
     local function default_wine_version()
         return iter(iter(get_wine_versions()).first().versions).first().name
@@ -107,6 +107,9 @@ end
 
 local function set_settings(game_name: string, settings: Settings)
     local full_settings = get_settings(nil)
+
+    -- To prevent long names abuse
+    game_name = str.encode(hash.calc(game_name, "seahash"), "base32")
 
     full_settings[game_name] = settings
 
