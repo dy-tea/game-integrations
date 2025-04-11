@@ -70,6 +70,10 @@ local function delete_game()
     pcall(fs.remove_dir, game_path)
 end
 
+local function get_components_settings()
+    return import("components").components.handle_settings("voices_of_the_void")
+end
+
 return {
     standard = 1,
 
@@ -230,10 +234,12 @@ return {
 
     settings = {
         get_property = function(name: string)
-            return nil
+            get_components_settings().get_property(name)
         end,
 
-        set_property = function(name: string, value: any) end,
+        set_property = function(name: string, value: any)
+            get_components_settings().set_property(name, value)
+        end,
 
         get_layout = function(variant: Variant)
             local iter = import("iterable")
@@ -244,7 +250,7 @@ return {
                 versions_enum[info.version] = info.title
             end
 
-            return {
+            local layout = {
                 {
                     title = {
                         en = "Game",
@@ -269,6 +275,10 @@ return {
                     }
                 }
             }
+
+            table.insert(layout, get_components_settings().get_layout())
+
+            return layout
         end
     }
 }
