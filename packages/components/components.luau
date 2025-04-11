@@ -70,13 +70,13 @@ local function get_settings(game_name: string | nil): Settings
     -- To prevent long names abuse
     game_name = str.encode(hash.calc(game_name, "seahash"), "base32")
 
+    local iter = import("iterable")
+
     local function default_wine_version()
         return iter(iter(get_wine_versions()).first().versions).first().name
     end
 
     if not settings[game_name] then
-        local iter = import("iterable")
-
         settings[game_name] = {
             wine = {
                 selected = default_wine_version(),
