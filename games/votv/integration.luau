@@ -234,7 +234,7 @@ return {
 
     settings = {
         get_property = function(name: string)
-            get_components_settings().get_property(name)
+            return get_components_settings().get_property(name)
         end,
 
         set_property = function(name: string, value: any)
