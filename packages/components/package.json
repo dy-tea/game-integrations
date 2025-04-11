@@ -1,0 +1,18 @@
+{
+    "standard": 1,
+    "package": {
+        "maintainers": [
+            "Nikita Podvirnyi <krypt0nn@vk.com>"
+        ]
+    },
+    "inputs": {
+        "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.lua",
+        "wine-staging-tkg-src": "wine/wine-staging-tkg.json"
+    },
+    "outputs": {
+        "components": {
+            "uri": "components.luau",
+            "format": "module/v1"
+        }
+    }
+}

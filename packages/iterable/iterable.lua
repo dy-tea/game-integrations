@@ -1,5 +1,5 @@
 -- iterable v1.3.0
--- Copyright (C) 2024  Nikita Podvirnyi <krypt0nn@vk.com>
+-- Copyright (C) 2024 - 2025  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
