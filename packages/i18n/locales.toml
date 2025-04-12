@@ -10,9 +10,9 @@ ru = "Окружение игры"
 en = "Wine version"
 ru = "Версия Wine"
 
-[hide_wine_versions]
-en = "Hide wine versions"
-ru = "Скрыть версии Wine"
+[available_wine_editions]
+en = "Available wine editions"
+ru = "Доступные редакции Wine"
 
 [install]
 en = "Install"
