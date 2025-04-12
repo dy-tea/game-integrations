@@ -34,8 +34,6 @@ local function get_wine_versions()
                 versions = str.decode(str.from_bytes(fs.read_file(group.src)), "json")
             })
         end
-
-        dbg(wine_versions_cache)
     end
 
     return clone(wine_versions_cache)
@@ -104,8 +102,6 @@ local function get_settings(game_name: string | nil): Settings
         end
     end
 
-    dbg(settings[game_name])
-
     return settings[game_name]
 end
 
@@ -161,24 +157,19 @@ return {
 
             get_layout = function()
                 local iter = import("iterable")
+                local i18n = import("i18n").i18n
 
                 local settings = get_settings(game_name)
 
                 return {
                     {
-                        title = {
-                            en = "Game runner",
-                            ru = "Окружение игры"
-                        },
+                        title = i18n("game_runner"),
 
                         entries = {
                             {
                                 name = "wine.selected",
 
-                                title = {
-                                    en = "Wine version",
-                                    ru = "Версия Wine"
-                                },
+                                title = i18n("wine_version"),
 
                                 entry = {
                                     format = "enum",
@@ -199,10 +190,7 @@ return {
                             {
                                 name = "wine.groups",
 
-                                title = {
-                                    en = "Hide wine versions",
-                                    ru = "Скрыть версии Wine"
-                                },
+                                title = i18n("hide_wine_versions"),
 
                                 entry = {
                                     format = "expandable",
