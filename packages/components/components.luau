@@ -17,27 +17,30 @@
 local data_dir_path = path.persist_dir("components")
 local settings_file_path = path.join(data_dir_path, "settings.json")
 
-local wine_versions_cache = nil
+------------------------------------------------- Imports -------------------------------------------------
 
-local function get_wine_versions()
-    if not wine_versions_cache then
-        wine_versions_cache = {}
+-- Since inputs of a package can't access other inputs
+-- of the same package here we implicitly feed them
+-- with all the necessary info.
 
-        local groups = {
-            { name = "wine_staging_tkg", title = "Wine-Staging-TkG", src = import("wine-staging-tkg-src") }
-        }
+local function import_wine()
+    local wine = import("wine")
 
-        for _, group in groups do
-            table.insert(wine_versions_cache, {
-                name = group.name,
-                title = group.title,
-                versions = str.decode(str.from_bytes(fs.read_file(group.src)), "json")
-            })
-        end
-    end
-
-    return clone(wine_versions_cache)
+    return wine({
+        wine_staging_tkg = fs.read_file(import("wine-staging-tkg-src"))
+    })
 end
+
+local function import_dxvk()
+    local wine = import("dxvk")
+
+    return wine({
+        dxvk = fs.read_file(import("dxvk-src")),
+        dxvk_gplasync = fs.read_file(import("dxvk-gplasync-src"))
+    })
+end
+
+------------------------------------------------- Settings -------------------------------------------------
 
 type Settings = {
     wine: {
@@ -50,9 +53,42 @@ type Settings = {
     },
 
     dxvk: {
-        selected: string
+        selected: string,
+
+        groups: {
+            -- https://github.com/doitsujin/dxvk
+            dxvk: boolean,
+
+            -- https://gitlab.com/Ph42oN/dxvk-gplasync
+            dxvk_gplasync: boolean
+        }
     }
 }
+
+local function get_settings_keys(): table
+    local keys = {
+        "wine.selected",
+        "wine.groups.wine_staging_tkg",
+
+        "dxvk.selected",
+        "dxvk.groups.dxvk",
+        "dxvk.groups.dxvk_gplasync"
+    }
+
+    local values = {}
+
+    for _, key in ipairs(keys) do
+        local path = {}
+
+        for component in key:gmatch("([^%.]+)") do
+            table.insert(path, component)
+        end
+
+        values[key] = path
+    end
+
+    return values
+end
 
 local function get_settings(game_name: string | nil): Settings
     if not path.exists(settings_file_path) then
@@ -65,13 +101,17 @@ local function get_settings(game_name: string | nil): Settings
         return settings
     end
 
-    -- To prevent long names abuse
-    game_name = str.encode(hash.calc(game_name, "seahash"), "base32")
-
     local iter = import("iterable")
 
+    local wine = import_wine()
+    local dxvk = import_dxvk()
+
     local function default_wine_version()
-        return iter(iter(get_wine_versions()).first().versions).first().name
+        return iter(iter(wine.get_versions()).first().versions).first().name
+    end
+
+    local function default_dxvk_version()
+        return iter(iter(dxvk.get_versions()).first().versions).first().name
     end
 
     if not settings[game_name] then
@@ -85,11 +125,16 @@ local function get_settings(game_name: string | nil): Settings
             },
 
             dxvk = {
-                selected = nil
+                selected = default_dxvk_version(),
+
+                groups = {
+                    dxvk = true,
+                    dxvk_gplasync = true
+                }
             }
         }
     else
-        local valid_wine_version = iter(get_wine_versions())
+        local valid_wine_version = iter(wine.get_versions())
             .map(function(group)
                 return iter(group.versions)
                     .map(function(version) return version.name end)
@@ -100,6 +145,18 @@ local function get_settings(game_name: string | nil): Settings
         if not valid_wine_version then
             settings[game_name].wine.selected = default_wine_version()
         end
+
+        local valid_dxvk_version = iter(dxvk.get_versions())
+            .map(function(group)
+                return iter(group.versions)
+                    .map(function(version) return version.name end)
+            end)
+            .flatten()
+            .any(function(version) return version == settings[game_name].wine.selected end)
+
+        if not valid_dxvk_version then
+            settings[game_name].dxvk.selected = default_dxvk_version()
+        end
     end
 
     return settings[game_name]
@@ -108,13 +165,12 @@ end
 local function set_settings(game_name: string, settings: Settings)
     local full_settings = get_settings(nil)
 
-    -- To prevent long names abuse
-    game_name = str.encode(hash.calc(game_name, "seahash"), "base32")
-
     full_settings[game_name] = settings
 
     fs.write_file(settings_file_path, str.to_bytes(str.encode(full_settings, "json")))
 end
+
+------------------------------------------------- Module -------------------------------------------------
 
 return {
     -- Get special get/set_property v1 game integration API handlers
@@ -123,14 +179,16 @@ return {
     handle_settings = function(game_name: string)
         return {
             get_property = function(name: string)
+                local settings_layout = get_settings_keys()
+
+                if not settings_layout[name] then
+                    return nil
+                end
+
                 local settings = get_settings(game_name)
 
-                for key in name:gmatch("([^%.]+)") do
-                    if not settings[key] then
-                        return nil
-                    end
-
-                    settings = settings[key]
+                for _, component in pairs(settings_layout[name]) do
+                    settings = settings[component]
                 end
 
                 return settings
@@ -138,16 +196,24 @@ return {
 
             -- Return true if property is set, otherwise false.
             set_property = function(name: string, value: any): boolean
-                local settings = get_settings(game_name)
+                local settings_layout = get_settings_keys()
 
-                if name == "wine.selected" then
-                    settings.wine.selected = value
-                elseif name == "dxvk.selected" then
-                    settings.dxvk.selected = value
-                elseif name == "wine.groups.wine_staging_tkg" then
-                    settings.wine.groups.wine_staging_tkg = value
-                else
+                if not settings_layout[name] then
                     return false
+                end
+
+                local settings = get_settings(game_name)
+                local traversable = settings
+
+                for i, key in ipairs(settings_layout[name]) do
+                    -- If you change a key of a table - its value will be updated
+                    -- even if this table is nested due to lua tables quirks.
+                    -- We're abusing this feature here.
+                    if i == #settings_layout[name] then
+                        traversable[key] = value
+                    else
+                        traversable = traversable[key]
+                    end
                 end
 
                 set_settings(game_name, settings)
@@ -159,6 +225,9 @@ return {
                 local iter = import("iterable")
                 local i18n = import("i18n").i18n
 
+                local wine = import_wine()
+                local dxvk = import_dxvk()
+
                 local settings = get_settings(game_name)
 
                 return {
@@ -168,13 +237,12 @@ return {
                         entries = {
                             {
                                 name = "wine.selected",
-
                                 title = i18n("wine_version") or "Wine version",
 
                                 entry = {
                                     format = "enum",
 
-                                    values = iter(get_wine_versions())
+                                    values = iter(wine.get_versions())
                                         .map(function(group) return group.versions end)
                                         .flatten()
                                         .fold({}, function(values, version)
@@ -188,12 +256,32 @@ return {
                             },
 
                             {
+                                name = "dxvk.selected",
+                                title = i18n("dxvk_version") or "DXVK version",
+
+                                entry = {
+                                    format = "enum",
+
+                                    values = iter(dxvk.get_versions())
+                                        .map(function(group) return group.versions end)
+                                        .flatten()
+                                        .fold({}, function(values, version)
+                                            values[version.name] = version.title
+
+                                            return values
+                                        end),
+
+                                    selected = settings.dxvk.selected
+                                }
+                            },
+
+                            {
                                 title = i18n("available_wine_editions") or "Available wine editions",
 
                                 entry = {
                                     format = "expandable",
 
-                                    entries = iter(get_wine_versions())
+                                    entries = iter(wine.get_versions())
                                         .map(function(group)
                                             return {
                                                 name = `wine.groups.{group.name}`,
@@ -204,6 +292,30 @@ return {
                                                 entry = {
                                                     format = "switch",
                                                     value = settings.wine.groups[group.name]
+                                                }
+                                            }
+                                        end)
+                                        .collect()
+                                }
+                            },
+
+                            {
+                                title = i18n("available_dxvk_editions") or "Available DXVK editions",
+
+                                entry = {
+                                    format = "expandable",
+
+                                    entries = iter(dxvk.get_versions())
+                                        .map(function(group)
+                                            return {
+                                                name = `dxvk.groups.{group.name}`,
+                                                title = group.title,
+
+                                                reactivity = "release",
+
+                                                entry = {
+                                                    format = "switch",
+                                                    value = settings.dxvk.groups[group.name]
                                                 }
                                             }
                                         end)
