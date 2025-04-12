@@ -188,9 +188,7 @@ return {
                             },
 
                             {
-                                name = "wine.groups",
-
-                                title = i18n("hide_wine_versions"),
+                                title = i18n("available_wine_editions"),
 
                                 entry = {
                                     format = "expandable",

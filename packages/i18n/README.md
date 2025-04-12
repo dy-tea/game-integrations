@@ -32,16 +32,21 @@ Provide `LoclizableString` translations for strings from the `locales.toml` file
 ```lua
 return {
     -- Simple translation
-    title = i18n("download"),
+    title = i18n("download") or "Download",
 
     -- Translation with options
     format = function(curr, total, diff)
         return i18n("downloading_progress", {
             current = curr / 1000 / 1000,
             total = total / 1000 / 1000
-        })
+        }) or `Downloading: {curr / total * 100}%`
     end
 }
 ```
+
+`i18n` function will return `nil` if it wasn't able to find and provide translation
+so you can use `i18n("...") or "..."` syntax to provide fallback value. It's
+recommended to always provide fallback translations because some locale names
+can change in future.
 
 Module and translations are licensed under [GPL-3.0](../../LICENSE).
