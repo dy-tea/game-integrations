@@ -14,6 +14,14 @@ ru = "Версия Wine"
 en = "Available wine editions"
 ru = "Доступные редакции Wine"
 
+[dxvk_version]
+en = "DXVK version"
+ru = "Версия DXVK"
+
+[available_dxvk_editions]
+en = "Available DXVK editions"
+ru = "Доступные редакции DXVK"
+
 [install]
 en = "Install"
 ru = "Установить"
