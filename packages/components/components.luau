@@ -113,7 +113,7 @@ local function set_settings(game_name: string, settings: Settings)
 
     full_settings[game_name] = settings
 
-    fs.write_file(settings_file_path, str.encode(full_settings, "json"))
+    fs.write_file(settings_file_path, str.to_bytes(str.encode(full_settings, "json")))
 end
 
 return {
@@ -163,13 +163,13 @@ return {
 
                 return {
                     {
-                        title = i18n("game_runner"),
+                        title = i18n("game_runner") or "Game runner",
 
                         entries = {
                             {
                                 name = "wine.selected",
 
-                                title = i18n("wine_version"),
+                                title = i18n("wine_version") or "Wine version",
 
                                 entry = {
                                     format = "enum",
@@ -188,7 +188,7 @@ return {
                             },
 
                             {
-                                title = i18n("available_wine_editions"),
+                                title = i18n("available_wine_editions") or "Available wine editions",
 
                                 entry = {
                                     format = "expandable",
