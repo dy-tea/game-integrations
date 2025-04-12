@@ -15,7 +15,7 @@ Add `i18n` package to your integration package inputs:
 {
     "standard": 1,
     "inputs": {
-        "i18n": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/i18n/package.json"
+        "i18n": "http://127.0.0.1:8080/packages/i18n/package.json"
     }
 }
 ```

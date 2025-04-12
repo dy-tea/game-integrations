@@ -12,7 +12,7 @@ Add hyvlib package to your integration package inputs:
 {
     "standard": 1,
     "inputs": {
-        "hyvlib": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/hyvlib/package.json"
+        "hyvlib": "http://127.0.0.1:8080/packages/hyvlib/package.json"
     }
 }
 ```
