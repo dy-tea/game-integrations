@@ -243,10 +243,22 @@ return {
                                     format = "enum",
 
                                     values = iter(wine.get_versions())
-                                        .map(function(group) return group.versions end)
+                                        .map(function(group)
+                                            return iter(group.versions)
+                                                .map(function(version)
+                                                    return {
+                                                        group = group.name,
+                                                        version = version
+                                                    }
+                                                end)
+                                                .collect()
+                                        end)
                                         .flatten()
+                                        .filter(function(version)
+                                            return settings.wine.groups[version.group] or version.version.name == settings.wine.selected
+                                        end)
                                         .fold({}, function(values, version)
-                                            values[version.name] = version.title
+                                            values[version.version.name] = version.version.title
 
                                             return values
                                         end),
@@ -263,10 +275,22 @@ return {
                                     format = "enum",
 
                                     values = iter(dxvk.get_versions())
-                                        .map(function(group) return group.versions end)
+                                        .map(function(group)
+                                            return iter(group.versions)
+                                                .map(function(version)
+                                                    return {
+                                                        group = group.name,
+                                                        version = version
+                                                    }
+                                                end)
+                                                .collect()
+                                        end)
                                         .flatten()
+                                        .filter(function(version)
+                                            return settings.dxvk.groups[version.group] or version.version.name == settings.dxvk.selected
+                                        end)
                                         .fold({}, function(values, version)
-                                            values[version.name] = version.title
+                                            values[version.version.name] = version.version.title
 
                                             return values
                                         end),
