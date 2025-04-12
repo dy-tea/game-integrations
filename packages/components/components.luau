@@ -199,6 +199,8 @@ return {
                                                 name = `wine.groups.{group.name}`,
                                                 title = group.title,
 
+                                                reactivity = "release",
+
                                                 entry = {
                                                     format = "switch",
                                                     value = settings.wine.groups[group.name]
