@@ -243,7 +243,6 @@ return {
                                     format = "enum",
 
                                     values = iter(wine.get_versions())
-<<<<<<< HEAD
                                         .map(function(group)
                                             return iter(group.versions)
                                                 .map(function(version)
@@ -254,13 +253,6 @@ return {
                                                 end)
                                                 .collect()
                                         end)
-=======
-                                        .map(function(group) return group.versions end)
-<<<<<<< HEAD
->>>>>>> 17190a1 (feat(packages/components): add DXVK editions)
-=======
->>>>>>> 57f85ef (feat(packages/components): add DXVK editions)
->>>>>>> 3c93bb6 (feat(packages/components): add DXVK editions)
                                         .flatten()
                                         .filter(function(version)
                                             return settings.wine.groups[version.group] or version.version.name == settings.wine.selected
@@ -283,7 +275,6 @@ return {
                                     format = "enum",
 
                                     values = iter(dxvk.get_versions())
-<<<<<<< HEAD
                                         .map(function(group)
                                             return iter(group.versions)
                                                 .map(function(version)
@@ -300,16 +291,6 @@ return {
                                         end)
                                         .fold({}, function(values, version)
                                             values[version.version.name] = version.version.title
-=======
-                                        .map(function(group) return group.versions end)
-                                        .flatten()
-                                        .fold({}, function(values, version)
-                                            values[version.name] = version.title
-<<<<<<< HEAD
->>>>>>> 17190a1 (feat(packages/components): add DXVK editions)
-=======
->>>>>>> 57f85ef (feat(packages/components): add DXVK editions)
->>>>>>> 3c93bb6 (feat(packages/components): add DXVK editions)
 
                                             return values
                                         end),
