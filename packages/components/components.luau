@@ -256,7 +256,11 @@ return {
                                         end)
 =======
                                         .map(function(group) return group.versions end)
+<<<<<<< HEAD
 >>>>>>> 17190a1 (feat(packages/components): add DXVK editions)
+=======
+>>>>>>> 57f85ef (feat(packages/components): add DXVK editions)
+>>>>>>> 3c93bb6 (feat(packages/components): add DXVK editions)
                                         .flatten()
                                         .filter(function(version)
                                             return settings.wine.groups[version.group] or version.version.name == settings.wine.selected
@@ -301,7 +305,11 @@ return {
                                         .flatten()
                                         .fold({}, function(values, version)
                                             values[version.name] = version.title
+<<<<<<< HEAD
 >>>>>>> 17190a1 (feat(packages/components): add DXVK editions)
+=======
+>>>>>>> 57f85ef (feat(packages/components): add DXVK editions)
+>>>>>>> 3c93bb6 (feat(packages/components): add DXVK editions)
 
                                             return values
                                         end),
