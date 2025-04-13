@@ -15,6 +15,11 @@
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 local data_dir_path = path.persist_dir("components")
+
+local wine_dir_path        = path.join(data_dir_path, "wine")
+local wine_prefix_dir_path = path.join(data_dir_path, "prefix")
+local dxvk_dir_path        = path.join(data_dir_path, "dxvk")
+
 local settings_file_path = path.join(data_dir_path, "settings.json")
 
 ------------------------------------------------- Imports -------------------------------------------------
@@ -44,6 +49,7 @@ end
 
 type Settings = {
     wine: {
+        prefix: string,
         selected: string,
 
         groups: {
@@ -65,26 +71,46 @@ type Settings = {
     }
 }
 
-local function get_settings_keys(): table
-    local keys = {
-        "wine.selected",
-        "wine.groups.wine_staging_tkg",
+local function filter_wine_prefix_name(name: string | nil): string
+    if name then
+        name = name:gsub("^%s+", "")
+    	name = name:gsub("%s+$", "")
+    	name = name:gsub("[^%a%d]", "_")
+    end
 
-        "dxvk.selected",
-        "dxvk.groups.dxvk",
-        "dxvk.groups.dxvk_gplasync"
+	if not name or string.len(name) == 0 then
+	   name = "games"
+	end
+
+	return name
+end
+
+local function get_settings_keys(): table
+    local function identity(value) return value end
+
+    local keys = {
+        ["wine.prefix"] = filter_wine_prefix_name,
+        ["wine.selected"] = identity,
+        ["wine.groups.wine_staging_tkg"] = identity,
+
+        ["dxvk.selected"] = identity,
+        ["dxvk.groups.dxvk"] = identity,
+        ["dxvk.groups.dxvk_gplasync"] = identity
     }
 
     local values = {}
 
-    for _, key in ipairs(keys) do
+    for key, setter in pairs(keys) do
         local path = {}
 
         for component in key:gmatch("([^%.]+)") do
             table.insert(path, component)
         end
 
-        values[key] = path
+        values[key] = {
+            path = path,
+            setter = setter
+        }
     end
 
     return values
@@ -117,6 +143,7 @@ local function get_settings(game_name: string | nil): Settings
     if not settings[game_name] then
         settings[game_name] = {
             wine = {
+                prefix = "games",
                 selected = default_wine_version(),
 
                 groups = {
@@ -134,6 +161,8 @@ local function get_settings(game_name: string | nil): Settings
             }
         }
     else
+        settings[game_name].wine.prefix = filter_wine_prefix_name(settings[game_name].wine.prefix)
+
         local valid_wine_version = iter(wine.get_versions())
             .map(function(group)
                 return iter(group.versions)
@@ -187,7 +216,7 @@ return {
 
                 local settings = get_settings(game_name)
 
-                for _, component in pairs(settings_layout[name]) do
+                for _, component in pairs(settings_layout[name].path) do
                     settings = settings[component]
                 end
 
@@ -205,12 +234,12 @@ return {
                 local settings = get_settings(game_name)
                 local traversable = settings
 
-                for i, key in ipairs(settings_layout[name]) do
+                for i, key in ipairs(settings_layout[name].path) do
                     -- If you change a key of a table - its value will be updated
                     -- even if this table is nested due to lua tables quirks.
                     -- We're abusing this feature here.
-                    if i == #settings_layout[name] then
-                        traversable[key] = value
+                    if i == #settings_layout[name].path then
+                        traversable[key] = settings_layout[name].setter(value)
                     else
                         traversable = traversable[key]
                     end
@@ -235,6 +264,18 @@ return {
                         title = i18n("game_runner") or "Game runner",
 
                         entries = {
+                            {
+                                name = "wine.prefix",
+
+                                title = i18n("wine_prefix_name") or "Wine prefix name",
+                                description = i18n("wine_prefix_name_description"),
+
+                                entry = {
+                                    format = "text",
+                                    value = settings.wine.prefix
+                                }
+                            },
+
                             {
                                 name = "wine.selected",
                                 title = i18n("wine_version") or "Wine version",
