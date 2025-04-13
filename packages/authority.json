@@ -17,7 +17,9 @@
                     "privileges": {
                         "process_api": true
                     },
-                    "hashes": []
+                    "hashes": [
+                        "ue5np614vi4ao"
+                    ]
                 }
             ]
         }

@@ -202,11 +202,146 @@ end
 ------------------------------------------------- Module -------------------------------------------------
 
 return {
-    -- Get special get/set_property v1 game integration API handlers
-    -- for given game name. Should be unique between games. This name
-    -- is used to store per-game settings.
+    -- Get special v1 game integration API handlers for given game name.
+    -- Should be unique between games. This name is used to store per-game settings.
     handle_settings = function(game_name: string)
+        -- Return pipeline of actions needed to prepare game runner.
+        local function get_runner_diff_pipeline()
+            local iter = import("iterable")
+            local i18n = import("i18n").i18n
+
+            local wine = import_wine()
+            local dxvk = import_dxvk()
+
+            local settings = get_settings(game_name)
+
+            local selected_wine = iter(wine.get_versions())
+                .map(function(group) return group.versions end)
+                .flatten()
+                .find(function(version) return version.name == settings.wine.selected end)
+                .value
+
+            if not selected_wine then
+                error("Failed to find selected wine version")
+            end
+
+            local wine_data_path = path.join(wine_dir_path, settings.wine.selected)
+            local wine_prefix_path = path.join(wine_prefix_dir_path, settings.wine.prefix)
+
+            local should_update_wine = not fs.exists(path.join(wine_data_path, selected_wine.features.binary))
+            local should_update_prefix = not wine.prefix.is_valid(wine_prefix_path) or wine.prefix.get_wine_name(wine_prefix_path) ~= settings.wine.selected
+
+            if not should_update_wine and not should_update_prefix then
+                return nil
+            end
+
+            local wine_download_output = path.join(path.temp_dir(), selected_wine.file)
+
+            return {
+                title = i18n("update_game_runner") or "Update game runner",
+
+                pipeline = {
+                    {
+                        title = i18n("update_wine_version") or "Update wine version",
+
+                        before = function() return should_update_wine end,
+
+                        perform = function(updater)
+                            downloader.download(selected_wine.url, {
+                                output_file = wine_download_output,
+                                continue_downloading = true,
+
+                                progress = function(current, total, diff)
+                                    updater({
+                                        progress = {
+                                            current = current,
+                                            total = total,
+
+                                            format = function()
+                                                local current = current / 1000 / 1000 / 1000
+                                                local total = total / 1000 / 1000 / 1000
+
+                                                current = math.floor(current * 100) / 100
+                                                total = math.floor(total * 100) / 100
+
+                                                return i18n("downloading_progress", {
+                                                    current = current,
+                                                    total = total
+                                                }) or `Downloading: {current / total * 100}%`
+                                            end
+                                        }
+                                    })
+                                end
+                            })
+                        end
+                    },
+
+                    {
+                        title = i18n("update_wine_version") or "Update wine version",
+
+                        before = function() return should_update_wine end,
+
+                        perform = function(updater)
+                            local handle = archive.open(wine_download_output)
+
+                            -- wine_dir_path instead of wine_data_path because we expect
+                            -- every wine build archive to contain a parent folder inside.
+                            archive.extract(handle, wine_dir_path, function(current, total, diff)
+                                updater({
+                                    progress = {
+                                        current = current,
+                                        total = total,
+
+                                        format = function()
+                                            local current = current / 1000 / 1000 / 1000
+                                            local total = total / 1000 / 1000 / 1000
+
+                                            current = math.floor(current * 100) / 100
+                                            total = math.floor(total * 100) / 100
+
+                                            return i18n("extraction_progress", {
+                                                current = current,
+                                                total = total
+                                            }) or `Extracting: {current / total * 100}%`
+                                        end
+                                    }
+                                })
+                            end)
+
+                            archive.close(handle)
+
+                            fs.remove(wine_download_output)
+                        end
+                    },
+
+                    {
+                        title = i18n("update_wine_prefix") or "Update wine prefix",
+
+                        before = function() return should_update_prefix end,
+
+                        perform = function(updater)
+                            fs.create_dir(wine_prefix_path)
+
+                            wine.prefix.update(settings.wine.selected, wine_prefix_path)
+                        end
+                    }
+                }
+            }
+        end
+
         return {
+            get_game_status = function()
+                if not get_runner_diff_pipeline() then
+                    return nil
+                end
+
+                return "update-required"
+            end,
+
+            get_game_diff = function()
+                return get_runner_diff_pipeline()
+            end,
+
             get_property = function(name: string)
                 local settings_layout = get_settings_keys()
 
