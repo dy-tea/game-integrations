@@ -14,6 +14,32 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+type Features = {
+    binary: string,
+    env: table | nil
+}
+
+type Output = {
+    -- Exit code of the process.
+    status: number | null,
+
+    -- Was the process closed normally.
+    is_ok: boolean,
+
+    -- Output of the process.
+    stdout: {number},
+    stderr: {number}
+}
+
+type LaunchCommand = {
+    binary: string,
+    args: {string} | nil,
+    env: table | nil
+}
+
+local data_dir_path = path.persist_dir("components")
+local wine_dir_path = path.join(data_dir_path, "wine")
+
 return function(imports)
     local wine_versions_cache = nil
 
@@ -37,7 +63,89 @@ return function(imports)
         return clone(wine_versions_cache)
     end
 
+    -- Try to find features of the wine version with provided name.
+    local function get_version_features(name: string): Features | nil
+        local iter = import("iterable")
+
+        local version = iter(get_versions())
+            .map(function(group) return group.versions end)
+            .flatten()
+            .find(function(version) return version.name == name end)
+
+        if not version then
+            return nil
+        end
+
+        return version.value.features
+    end
+
+    -- Run wine with provided name, arguments and environment variables.
+    -- Return true if command run successfully, otherwise false.
+    local function run(name: string, args: {string}, env: table | nil): Output | nil
+        local features = get_version_features(name)
+
+        if not features then
+            error(`Invalid wine version name: '{name}'`)
+        end
+
+        local wine_path = path.join(wine_dir_path, name, features.binary)
+
+        if not fs.exists(wine_path) then
+            error(`Wine version '{name}' is not installed or invalid`)
+        end
+
+        if not env then
+            env = {}
+        end
+
+        if features.env then
+            for k, v in pairs(features.env) do
+                env[k] = v
+            end
+        end
+
+        return process.exec(wine_path, args, env)
+    end
+
+    -- Create or update wine prefix with provided version name and prefix path.
+    local function update_prefix(name: string, prefix: string)
+        run(name, { "wineboot" }, { WINEPREFIX = prefix })
+    end
+
+    -- Wrap provided launch command with selected wine version name.
+    -- Basically adds `wine` to the beginning of the command and merges
+    -- environment variables.
+    local function wrap_launch_command(name: string, command: LaunchCommand): LaunchCommand
+        local features = get_version_features(name)
+
+        if not features then
+            error(`Invalid wine version name: '{name}'`)
+        end
+
+        local wrap = {
+            binary = features.binary,
+            args = { command.binary },
+            env = features.env or {}
+        }
+
+        if command.args then
+            for _, arg in pairs(command.args) do
+                table.insert(wrap.args, arg)
+            end
+        end
+
+        if command.env then
+            for k, v in pairs(command.env) do
+                wrap.env[k] = v
+            end
+        end
+
+        return wrap
+    end
+
     return {
-        get_versions = get_versions
+        get_versions = get_versions,
+        update_prefix = update_prefix,
+        wrap_launch_command = wrap_launch_command
     }
 end

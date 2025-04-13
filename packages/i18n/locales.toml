@@ -6,6 +6,14 @@ ru = "Игра"
 en = "Game runner"
 ru = "Окружение игры"
 
+[wine_prefix_name]
+en = "Wine prefix name"
+ru = "Название префикса Wine"
+
+[wine_prefix_name_description]
+en = "Name of the folder where the wine prefix will be installed. Games with the same prefix name will use the same prefix"
+ru = "Название папки, в которой будет установлен префикс Wine. Игры с одинаковым названием префикса будут использовать один и тот же префикс"
+
 [wine_version]
 en = "Wine version"
 ru = "Версия Wine"
