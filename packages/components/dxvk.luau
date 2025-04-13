@@ -38,6 +38,13 @@ return function(imports)
         return clone(dxvk_versions_cache)
     end
 
+    -- Install DXVK to the given wine prefix folder.
+    local function install(name: string, prefix: string)
+        local system32 = path.join(prefix, "drive_c", "windows", "system32")
+
+        -- TODO
+    end
+
     return {
         get_versions = get_versions
     }

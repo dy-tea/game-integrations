@@ -91,6 +91,12 @@ return {
 
     game = {
         get_status = function(variant: Variant)
+            local status = get_components_settings().get_game_status()
+
+            if status then
+                return status
+            end
+
             if not get_game_version() then
                 return "not-installed"
             end
@@ -99,6 +105,12 @@ return {
         end,
 
         get_diff = function(variant: Variant)
+            local diff = get_components_settings().get_game_diff()
+
+            if diff then
+                return diff
+            end
+
             if get_game_version() then
                 return nil
             end

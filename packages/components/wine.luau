@@ -65,33 +65,34 @@ return function(imports)
 
     -- Try to find features of the wine version with provided name.
     local function get_version_features(name: string): Features | nil
-        local iter = import("iterable")
-
-        local version = iter(get_versions())
-            .map(function(group) return group.versions end)
-            .flatten()
-            .find(function(version) return version.name == name end)
-
-        if not version then
-            return nil
+        for _, group in pairs(get_versions()) do
+            for _, version in pairs(group.versions) do
+                if version.name == name then
+                    return version.features
+                end
+            end
         end
 
-        return version.value.features
+        return nil
     end
 
     -- Run wine with provided name, arguments and environment variables.
     -- Return true if command run successfully, otherwise false.
     local function run(name: string, args: {string}, env: table | nil): Output | nil
+        if not process then
+            error("components library has no access to the v1 process API")
+        end
+
         local features = get_version_features(name)
 
         if not features then
-            error(`Invalid wine version name: '{name}'`)
+            error(`invalid wine version name: '{name}'`)
         end
 
         local wine_path = path.join(wine_dir_path, name, features.binary)
 
         if not fs.exists(wine_path) then
-            error(`Wine version '{name}' is not installed or invalid`)
+            error(`wine version '{name}' is not installed or invalid`)
         end
 
         if not env then
@@ -107,9 +108,33 @@ return function(imports)
         return process.exec(wine_path, args, env)
     end
 
+    -- Check if provided folder contains a valid wine prefix.
+    local function is_valid_prefix(prefix: string): boolean
+        return fs.exists(path.join(prefix, "drive_c")) and fs.exists(path.join(prefix, "system.reg"))
+    end
+
     -- Create or update wine prefix with provided version name and prefix path.
     local function update_prefix(name: string, prefix: string)
-        run(name, { "wineboot" }, { WINEPREFIX = prefix })
+        if not path.accessible(prefix) then
+            error(`you're not allowed to create wine prefix in '{prefix}'`)
+        end
+
+        local result = run(name, { "wineboot" }, { WINEPREFIX = prefix })
+
+        if result.is_ok and is_valid_prefix(prefix) then
+            fs.write_file(path.join(prefix, ".wine"), name)
+        end
+    end
+
+    -- Read name of the wine used to create prefix in the given folder.
+    local function get_prefix_wine_name(prefix: string): string | nil
+        local path = path.join(prefix, ".wine")
+
+        if not fs.exists(path) then
+            return nil
+        end
+
+        return str.from_bytes(fs.read_file(path))
     end
 
     -- Wrap provided launch command with selected wine version name.
@@ -145,7 +170,11 @@ return function(imports)
 
     return {
         get_versions = get_versions,
-        update_prefix = update_prefix,
+        prefix = {
+            is_valid = is_valid_prefix,
+            update = update_prefix,
+            get_wine_name = get_prefix_wine_name
+        },
         wrap_launch_command = wrap_launch_command
     }
 end

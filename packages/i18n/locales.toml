@@ -4,7 +4,7 @@ ru = "Игра"
 
 [game_runner]
 en = "Game runner"
-ru = "Окружение игры"
+ru = "Окружение запуска игры"
 
 [wine_prefix_name]
 en = "Wine prefix name"
@@ -30,6 +30,18 @@ ru = "Версия DXVK"
 en = "Available DXVK editions"
 ru = "Доступные редакции DXVK"
 
+[update_game_runner]
+en = "Update game runner"
+ru = "Обновить окружение запуска игры"
+
+[update_wine_version]
+en = "Update wine version"
+ru = "Обновить версию Wine"
+
+[update_wine_prefix]
+en = "Update wine prefix"
+ru = "Обновить префикс Wine"
+
 [install]
 en = "Install"
 ru = "Установить"
@@ -52,7 +64,7 @@ ru = "Установить игру"
 
 [downloading_progress]
 en = "Downloaded {current} GB / {total} GB"
-ru = "Скачано {current} ГБ / {total} ГБ"
+ru = "Загружено {current} ГБ / {total} ГБ"
 
 [extraction_progress]
 en = "Extracted {current} GB / {total} GB"
