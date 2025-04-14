@@ -42,17 +42,32 @@ end
 ------------------------------------------------- Game versions -------------------------------------------------
 
 -- Direct download links are taken from here: https://archive.org/details/votv-archive
-local game_versions = {
-    { version = "pa0082_0012", title = "Pre-Alpha 0.8.2b", url = "https://archive.org/download/votv-archive/pa0082_0012.7z" },
-    { version = "pa0081_0008", title = "Pre-Alpha 0.8.1",  url = "https://archive.org/download/votv-archive/pa0081_0008.7z" },
-    { version = "pa08_0017",   title = "Pre-Alpha 0.8.0",  url = "https://archive.org/download/votv-archive/pa08_0017.7z" },
-    { version = "pa07_0011",   title = "Pre-Alpha 0.7.0",  url = "https://archive.org/download/votv-archive/pa07_0011.7z" }
-}
+local function list_game_versions()
+    return {
+        { version = "pa0082_0012", title = "Pre-Alpha 0.8.2b", url = "https://archive.org/download/votv-archive/pa0082_0012.7z" },
+        { version = "pa0081_0008", title = "Pre-Alpha 0.8.1",  url = "https://archive.org/download/votv-archive/pa0081_0008.7z" },
+        { version = "pa08_0017",   title = "Pre-Alpha 0.8.0",  url = "https://archive.org/download/votv-archive/pa08_0017.7z" },
+        { version = "pa07_0011",   title = "Pre-Alpha 0.7.0",  url = "https://archive.org/download/votv-archive/pa07_0011.7z" }
+    }
+end
 
 local function last_game_version(): Version
     local iter = import("iterable")
 
-    return iter(game_versions).cloned().first()
+    return iter(list_game_versions()).first()
+end
+
+local function get_game_version_info(version: string): Version | nil
+    local iter = import("iterable")
+
+    local info = iter(list_game_versions())
+        .find(function(info) return info.version == version end)
+
+    if info then
+        info = info.value
+    end
+
+    return info
 end
 
 ------------------------------------------------- Settings -------------------------------------------------
@@ -70,7 +85,7 @@ local function get_settings()
 
     local iter = import("iterable")
 
-    local valid_version = iter(game_versions).cloned()
+    local valid_version = iter(list_game_versions())
         .any(function(info) return info.version == settings.game_version end)
 
     if not settings.game_version or not valid_version then
@@ -86,22 +101,12 @@ end
 
 ------------------------------------------------- Game -------------------------------------------------
 
-local function get_game_version(): Version | nil
+local function get_game_version(): string
     if not fs.exists(game_version_path) then
         return nil
     end
 
-    local iter = import("iterable")
-
-    local version = str.from_bytes(fs.read_file(game_version_path))
-
-    for _, info in iter(game_versions).cloned() do
-        if version == info.version then
-            return info
-        end
-    end
-
-    return nil
+    return str.from_bytes(fs.read_file(game_version_path))
 end
 
 local function set_game_version(version: string)
@@ -117,7 +122,7 @@ local function is_game_installed(): boolean
 
     local settings = get_settings()
 
-    return version.version == settings.game_version
+    return version == settings.game_version
 end
 
 ------------------------------------------------- Module -------------------------------------------------
@@ -162,9 +167,14 @@ return {
                 return nil
             end
 
-            local i18n = import("i18n").i18n
+            local settings = get_settings()
+            local info = get_game_version_info(settings.game_version)
 
-            local info = last_game_version()
+            if not info then
+                error(`invalid game version selected: {settings.game_version}`)
+            end
+
+            local i18n = import("i18n").i18n
 
             local archive_path = path.join(path.temp_dir(), `votv_{info.version}.7z`)
 
@@ -220,7 +230,7 @@ return {
                         perform = function(updater)
                             local handle = archive.open(archive_path)
 
-                            archive.extract(handle, data_path, function(current, total, diff)
+                            archive.extract(handle, data_dir_path, function(current, total, diff)
                                 updater({
                                     progress = {
                                         current = current,
@@ -241,8 +251,8 @@ return {
 
                             archive.close(handle)
 
-                            fs.move(path.join(data_path, info.version, "WindowsNoEditor"), game_dir_path)
-                            fs.remove(path.join(data_path, info.version))
+                            fs.move(path.join(data_dir_path, info.version, "WindowsNoEditor"), game_dir_path)
+                            fs.remove(path.join(data_dir_path, info.version))
                             fs.remove(archive_path)
 
                             set_game_version(info.version)
@@ -310,8 +320,7 @@ return {
                             entry = {
                                 format = "enum",
 
-                                values = iter(game_versions)
-                                    .cloned()
+                                values = iter(list_game_versions())
                                     .fold({}, function(values, info)
                                         values[info.version] = info.title
 
