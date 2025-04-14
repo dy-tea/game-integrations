@@ -1,7 +1,7 @@
 {
     "standard": 1,
     "game": {
-        "title": "Genshin Impact",
+        "title": "Genshin Impact [local]",
         "description": {
             "en": "WIP implementation used for testing",
             "ru": "Реализация пакета, используемая для тестов"

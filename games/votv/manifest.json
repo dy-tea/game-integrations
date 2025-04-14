@@ -1,7 +1,7 @@
 {
     "standard": 1,
     "game": {
-        "title": "Voices of the Void",
+        "title": "Voices of the Void [local]",
         "description": {
             "en": "WIP implementation used for testing",
             "ru": "Реализация пакета, используемая для тестов"

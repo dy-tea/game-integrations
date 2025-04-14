@@ -1,7 +1,7 @@
 {
     "standard": 1,
     "game": {
-        "title": "Honkai Impact 3rd",
+        "title": "Honkai Impact 3rd [local]",
         "description": {
             "en": "WIP implementation used for testing",
             "ru": "Реализация пакета, используемая для тестов"
