@@ -19,6 +19,12 @@ type DxvkInfo = {
     arch: string
 }
 
+type LaunchCommand = {
+    binary: string,
+    args: {string} | nil,
+    env: table | nil
+}
+
 local data_dir_path = path.persist_dir("components")
 local dxvk_dir_path = path.join(data_dir_path, "dxvk")
 
@@ -48,11 +54,12 @@ return function(imports)
     end
 
     -- Try to find features of the dxvk version with provided name.
+    -- This function will return empty table if version exists but it has no features.
     local function get_version_features(name: string): Features | nil
         for _, group in pairs(get_versions()) do
             for _, version in pairs(group.versions) do
                 if version.name == name then
-                    return version.features
+                    return version.features or {}
                 end
             end
         end
@@ -99,6 +106,27 @@ return function(imports)
         return str.decode(str.from_bytes(fs.read_file(path)), "json")
     end
 
+    -- Wrap provided launch command with selected wine version name.
+    -- Basically adds `wine` to the beginning of the command and merges
+    -- environment variables.
+    local function wrap_launch_command(name: string, command: LaunchCommand): LaunchCommand
+        local features = get_version_features(name)
+
+        if not features then
+            error(`invalid dxvk version name: '{name}'`)
+        end
+
+        if features.env then
+            command.env = command.env or {}
+
+            for k, v in pairs(features.env) do
+                command.env[k] = v
+            end
+        end
+
+        return command
+    end
+
     return {
         versions = {
             list = get_versions,
@@ -107,6 +135,7 @@ return function(imports)
         prefix = {
             get_info = get_prefix_dxvk_info
         },
-        install = install
+        install = install,
+        wrap_launch_command = wrap_launch_command
     }
 end

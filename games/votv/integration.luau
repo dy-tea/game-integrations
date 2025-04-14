@@ -35,8 +35,9 @@ local game_versions = {
 
 local data_path = path.persist_dir("voices_of_the_void")
 
-local game_path = path.join(data_path, "game")
-local game_version_path = path.join(game_path, ".version")
+local game_dir_path     = path.join(data_path, "game")
+local game_version_path = path.join(game_dir_path, ".version")
+local game_binary_path  = path.join(game_dir_path, "VotV.exe")
 
 local function last_game_version(): Version
     local iter = import("iterable")
@@ -67,11 +68,11 @@ local function set_game_version(version: string)
 end
 
 local function delete_game()
-    pcall(fs.remove_dir, game_path)
+    pcall(fs.remove_dir, game_dir_path)
 end
 
-local function get_components_settings()
-    return import("components").components.handle_settings("voices_of_the_void")
+local function import_components()
+    return import("components").components("voices_of_the_void")
 end
 
 return {
@@ -91,7 +92,7 @@ return {
 
     game = {
         get_status = function(variant: Variant)
-            local status = get_components_settings().get_game_status(variant)
+            local status = import_components().game.get_status(variant)
 
             if status then
                 return status
@@ -105,7 +106,7 @@ return {
         end,
 
         get_diff = function(variant: Variant)
-            local diff = get_components_settings().get_game_diff(variant)
+            local diff = import_components().game.get_diff(variant)
 
             if diff then
                 return diff
@@ -221,7 +222,7 @@ return {
 
                             archive.close(handle)
 
-                            fs.move(path.join(data_path, info.version, "WindowsNoEditor"), game_path)
+                            fs.move(path.join(data_path, info.version, "WindowsNoEditor"), game_dir_path)
                             fs.remove(path.join(data_path, info.version))
                             fs.remove(archive_path)
 
@@ -233,24 +234,27 @@ return {
         end,
 
         get_launch_info = function(variant: Variant)
-            return {
-                status = "disabled",
-                hint = {
-                    en = "It's a test implementation not meant for real use",
-                    ru = "Это тестовая реализация, не предназначенная для реального использования"
-                },
-                binary = ""
-            }
+            if not get_game_version() then
+                return {
+                    status = "disabled",
+                    binary = game_binary_path
+                }
+            end
+
+            return import_components().game.wrap_launch_info({
+                status = "normal",
+                binary = game_binary_path
+            })
         end
     },
 
     settings = {
         get_property = function(name: string)
-            return get_components_settings().get_property(name)
+            return import_components().settings.get_property(name)
         end,
 
         set_property = function(name: string, value: any)
-            get_components_settings().set_property(name, value)
+            import_components().settings.set_property(name, value)
         end,
 
         get_layout = function(variant: Variant)
@@ -289,7 +293,7 @@ return {
             }
 
             return iter(layout)
-                .chain(get_components_settings().get_layout())
+                .chain(import_components().settings.get_layout())
                 .collect()
         end
     }
