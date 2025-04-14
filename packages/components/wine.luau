@@ -117,7 +117,7 @@ return function(imports)
     -- Create or update wine prefix with provided version name and prefix path.
     local function update_prefix(name: string, prefix: string)
         if not path.accessible(prefix) then
-            error(`you're not allowed to create wine prefix in '{prefix}'`)
+            error(`you are not allowed to create wine prefix in '{prefix}'`)
         end
 
         local result = run(name, { "wineboot" }, { WINEPREFIX = prefix })
@@ -138,35 +138,40 @@ return function(imports)
         return str.from_bytes(fs.read_file(path))
     end
 
-    -- Wrap provided launch command with selected wine version name.
+    -- Wrap provided launch command with selected wine version and prefix path.
     -- Basically adds `wine` to the beginning of the command and merges
     -- environment variables.
-    local function wrap_launch_command(name: string, command: LaunchCommand): LaunchCommand
+    local function wrap_launch_command(name: string, prefix: string, command: LaunchCommand): LaunchCommand
+        if not path.accessible(prefix) then
+            error(`you are not allowed to create wine prefix in '{prefix}'`)
+        end
+
         local features = get_version_features(name)
 
         if not features then
-            error(`Invalid wine version name: '{name}'`)
+            error(`invalid wine version name: '{name}'`)
         end
 
-        local wrap = {
-            binary = features.binary,
-            args = { command.binary },
-            env = features.env or {}
-        }
+        local original_binary = command.binary
+        local original_args = command.args or {}
 
-        if command.args then
-            for _, arg in pairs(command.args) do
-                table.insert(wrap.args, arg)
+        command.binary = path.join(wine_dir_path, name, features.binary)
+        command.args = { original_binary }
+        command.env = command.env or {}
+
+        for _, arg in ipairs(original_args) do
+            table.insert(command.args, arg)
+        end
+
+        if features.env then
+            for k, v in pairs(features.env) do
+                command.env[k] = v
             end
         end
 
-        if command.env then
-            for k, v in pairs(command.env) do
-                wrap.env[k] = v
-            end
-        end
+        command.env["WINEPREFIX"] = prefix
 
-        return wrap
+        return command
     end
 
     return {

@@ -19,6 +19,13 @@ type GameVariant = {
     edition: string
 }
 
+-- Not complete definition but enough for our job.
+type GameLaunchInfo = {
+    binary: string,
+    args: {string} | nil,
+    env: table | nil
+}
+
 local data_dir_path = path.persist_dir("components")
 
 local wine_dir_path        = path.join(data_dir_path, "wine")
@@ -206,244 +213,242 @@ end
 
 ------------------------------------------------- Module -------------------------------------------------
 
-return {
-    -- Get special v1 game integration API handlers for given game name.
-    -- Should be unique between games. This name is used to store per-game settings.
-    handle_settings = function(game_name: string)
-        local function get_arch_from_platform(platform: string): string | nil
-            if string.gmatch(platform, "x86_64-.+") then
-                return "x64"
-            end
+return function(game_name: string)
+    local function get_arch_from_platform(platform: string): string | nil
+        if string.gmatch(platform, "x86_64-.+") then
+            return "x64"
+        end
 
+        return nil
+    end
+
+    -- Return pipeline of actions needed to prepare game runner.
+    local function get_runner_diff_pipeline(variant: GameVariant)
+        local curr_platform_arch = get_arch_from_platform(variant.platform) or error(`unsupported architecture: {variant.platform}`)
+
+        local iter = import("iterable")
+        local i18n = import("i18n").i18n
+
+        local wine = import_wine()
+        local dxvk = import_dxvk()
+
+        local settings = get_settings(game_name)
+
+        local selected_wine = iter(wine.versions.list())
+            .map(function(group) return group.versions end)
+            .flatten()
+            .find(function(version) return version.name == settings.wine.selected end)
+            .value
+
+        if not selected_wine then
+            error("Failed to find selected wine version")
+        end
+
+        local selected_dxvk = iter(dxvk.versions.list())
+            .map(function(group) return group.versions end)
+            .flatten()
+            .find(function(version) return version.name == settings.dxvk.selected end)
+            .value
+
+        if not selected_dxvk then
+            error("Failed to find selected dxvk version")
+        end
+
+        local wine_data_path   = path.join(wine_dir_path, settings.wine.selected)
+        local wine_prefix_path = path.join(wine_prefix_dir_path, settings.wine.prefix)
+        local dxvk_data_path   = path.join(dxvk_dir_path, settings.dxvk.selected)
+
+        local should_update_wine   = not fs.exists(path.join(wine_data_path, selected_wine.features.binary))
+        local should_update_prefix = not wine.prefix.is_valid(wine_prefix_path) or wine.prefix.get_wine_name(wine_prefix_path) ~= settings.wine.selected
+        local should_update_dxvk   = dxvk.prefix.get_info(wine_prefix_path) or { name = "", arch = "" }
+
+        should_update_dxvk = should_update_dxvk.name ~= settings.dxvk.selected or should_update_dxvk.arch ~= curr_platform_arch
+
+        if not should_update_wine and not should_update_prefix and not should_update_dxvk then
             return nil
         end
 
-        -- Return pipeline of actions needed to prepare game runner.
-        local function get_runner_diff_pipeline(variant: GameVariant)
-            local curr_platform_arch = get_arch_from_platform(variant.platform) or error(`unsupported architecture: {variant.platform}`)
-
-            local iter = import("iterable")
-            local i18n = import("i18n").i18n
-
-            local wine = import_wine()
-            local dxvk = import_dxvk()
-
-            local settings = get_settings(game_name)
-
-            local selected_wine = iter(wine.versions.list())
-                .map(function(group) return group.versions end)
-                .flatten()
-                .find(function(version) return version.name == settings.wine.selected end)
-                .value
-
-            if not selected_wine then
-                error("Failed to find selected wine version")
-            end
-
-            local selected_dxvk = iter(dxvk.versions.list())
-                .map(function(group) return group.versions end)
-                .flatten()
-                .find(function(version) return version.name == settings.dxvk.selected end)
-                .value
-
-            if not selected_dxvk then
-                error("Failed to find selected dxvk version")
-            end
-
-            local wine_data_path   = path.join(wine_dir_path, settings.wine.selected)
-            local wine_prefix_path = path.join(wine_prefix_dir_path, settings.wine.prefix)
-            local dxvk_data_path   = path.join(dxvk_dir_path, settings.dxvk.selected)
-
-            local should_update_wine   = not fs.exists(path.join(wine_data_path, selected_wine.features.binary))
-            local should_update_prefix = not wine.prefix.is_valid(wine_prefix_path) or wine.prefix.get_wine_name(wine_prefix_path) ~= settings.wine.selected
-            local should_update_dxvk   = dxvk.prefix.get_info(wine_prefix_path) or { name = "", arch = "" }
-
-            should_update_dxvk = should_update_dxvk.name ~= settings.dxvk.selected or should_update_dxvk.arch ~= curr_platform_arch
-
-            if not should_update_wine and not should_update_prefix and not should_update_dxvk then
-                return nil
-            end
-
-            local wine_download_output = path.join(path.temp_dir(), selected_wine.file)
-            local dxvk_download_output = path.join(path.temp_dir(), selected_dxvk.file)
-
-            return {
-                title = i18n("update_game_runner"),
-
-                pipeline = {
-                    {
-                        title = i18n("update_wine_version"),
-
-                        before = function() return should_update_wine end,
-
-                        perform = function(updater)
-                            downloader.download(selected_wine.url, {
-                                output_file = wine_download_output,
-                                continue_downloading = true,
-
-                                progress = function(current, total, diff)
-                                    updater({
-                                        progress = {
-                                            current = current,
-                                            total = total,
-
-                                            format = function()
-                                                local current = current / 1000 / 1000 / 1000
-                                                local total = total / 1000 / 1000 / 1000
-
-                                                current = math.floor(current * 100) / 100
-                                                total = math.floor(total * 100) / 100
-
-                                                return i18n("downloading_progress", {
-                                                    current = current,
-                                                    total = total
-                                                })
-                                            end
-                                        }
-                                    })
-                                end
-                            })
-                        end
-                    },
-
-                    {
-                        title = i18n("update_wine_version"),
-
-                        before = function() return should_update_wine end,
-
-                        perform = function(updater)
-                            local handle = archive.open(wine_download_output)
-
-                            -- wine_dir_path instead of wine_data_path because we expect
-                            -- every wine build archive to contain a parent folder inside.
-                            archive.extract(handle, wine_dir_path, function(current, total, diff)
-                                updater({
-                                    progress = {
-                                        current = current,
-                                        total = total,
-
-                                        format = function()
-                                            local current = current / 1000 / 1000 / 1000
-                                            local total = total / 1000 / 1000 / 1000
-
-                                            current = math.floor(current * 100) / 100
-                                            total = math.floor(total * 100) / 100
-
-                                            return i18n("extraction_progress", {
-                                                current = current,
-                                                total = total
-                                            })
-                                        end
-                                    }
-                                })
-                            end)
-
-                            archive.close(handle)
-
-                            fs.remove(wine_download_output)
-                        end
-                    },
-
-                    {
-                        title = i18n("update_wine_prefix"),
-
-                        before = function() return should_update_prefix end,
-
-                        perform = function(updater)
-                            fs.create_dir(wine_prefix_path)
-
-                            wine.prefix.update(settings.wine.selected, wine_prefix_path)
-                        end
-                    },
-
-                    {
-                        title = i18n("update_dxvk_version"),
-
-                        before = function() return should_update_dxvk end,
-
-                        perform = function(updater)
-                            downloader.download(selected_dxvk.url, {
-                                output_file = dxvk_download_output,
-                                continue_downloading = true,
-
-                                progress = function(current, total, diff)
-                                    updater({
-                                        progress = {
-                                            current = current,
-                                            total = total,
-
-                                            format = function()
-                                                local current = current / 1000 / 1000 / 1000
-                                                local total = total / 1000 / 1000 / 1000
-
-                                                current = math.floor(current * 100) / 100
-                                                total = math.floor(total * 100) / 100
-
-                                                return i18n("downloading_progress", {
-                                                    current = current,
-                                                    total = total
-                                                })
-                                            end
-                                        }
-                                    })
-                                end
-                            })
-                        end
-                    },
-
-                    {
-                        title = i18n("update_dxvk_version"),
-
-                        before = function() return should_update_dxvk end,
-
-                        perform = function(updater)
-                            local handle = archive.open(dxvk_download_output)
-
-                            -- dxvk_dir_path instead of dxvk_data_path because we expect
-                            -- every dxvk build archive to contain a parent folder inside.
-                            archive.extract(handle, dxvk_dir_path, function(current, total, diff)
-                                updater({
-                                    progress = {
-                                        current = current,
-                                        total = total,
-
-                                        format = function()
-                                            local current = current / 1000 / 1000 / 1000
-                                            local total = total / 1000 / 1000 / 1000
-
-                                            current = math.floor(current * 100) / 100
-                                            total = math.floor(total * 100) / 100
-
-                                            return i18n("extraction_progress", {
-                                                current = current,
-                                                total = total
-                                            })
-                                        end
-                                    }
-                                })
-                            end)
-
-                            archive.close(handle)
-
-                            fs.remove(dxvk_download_output)
-                        end
-                    },
-
-                    {
-                        title = i18n("update_dxvk_version"),
-
-                        before = function() return should_update_dxvk end,
-
-                        perform = function(updater)
-                            dxvk.install(settings.dxvk.selected, wine_prefix_path, curr_platform_arch)
-                        end
-                    }
-                }
-            }
-        end
+        local wine_download_output = path.join(path.temp_dir(), selected_wine.file)
+        local dxvk_download_output = path.join(path.temp_dir(), selected_dxvk.file)
 
         return {
-            get_game_status = function(variant: GameVariant)
+            title = i18n("update_game_runner"),
+
+            pipeline = {
+                {
+                    title = i18n("update_wine_version"),
+
+                    before = function() return should_update_wine end,
+
+                    perform = function(updater)
+                        downloader.download(selected_wine.url, {
+                            output_file = wine_download_output,
+                            continue_downloading = true,
+
+                            progress = function(current, total, diff)
+                                updater({
+                                    progress = {
+                                        current = current,
+                                        total = total,
+
+                                        format = function()
+                                            local current = current / 1000 / 1000 / 1000
+                                            local total = total / 1000 / 1000 / 1000
+
+                                            current = math.floor(current * 100) / 100
+                                            total = math.floor(total * 100) / 100
+
+                                            return i18n("downloading_progress", {
+                                                current = current,
+                                                total = total
+                                            })
+                                        end
+                                    }
+                                })
+                            end
+                        })
+                    end
+                },
+
+                {
+                    title = i18n("update_wine_version"),
+
+                    before = function() return should_update_wine end,
+
+                    perform = function(updater)
+                        local handle = archive.open(wine_download_output)
+
+                        -- wine_dir_path instead of wine_data_path because we expect
+                        -- every wine build archive to contain a parent folder inside.
+                        archive.extract(handle, wine_dir_path, function(current, total, diff)
+                            updater({
+                                progress = {
+                                    current = current,
+                                    total = total,
+
+                                    format = function()
+                                        local current = current / 1000 / 1000 / 1000
+                                        local total = total / 1000 / 1000 / 1000
+
+                                        current = math.floor(current * 100) / 100
+                                        total = math.floor(total * 100) / 100
+
+                                        return i18n("extraction_progress", {
+                                            current = current,
+                                            total = total
+                                        })
+                                    end
+                                }
+                            })
+                        end)
+
+                        archive.close(handle)
+
+                        fs.remove(wine_download_output)
+                    end
+                },
+
+                {
+                    title = i18n("update_wine_prefix"),
+
+                    before = function() return should_update_prefix end,
+
+                    perform = function(updater)
+                        fs.create_dir(wine_prefix_path)
+
+                        wine.prefix.update(settings.wine.selected, wine_prefix_path)
+                    end
+                },
+
+                {
+                    title = i18n("update_dxvk_version"),
+
+                    before = function() return should_update_dxvk end,
+
+                    perform = function(updater)
+                        downloader.download(selected_dxvk.url, {
+                            output_file = dxvk_download_output,
+                            continue_downloading = true,
+
+                            progress = function(current, total, diff)
+                                updater({
+                                    progress = {
+                                        current = current,
+                                        total = total,
+
+                                        format = function()
+                                            local current = current / 1000 / 1000 / 1000
+                                            local total = total / 1000 / 1000 / 1000
+
+                                            current = math.floor(current * 100) / 100
+                                            total = math.floor(total * 100) / 100
+
+                                            return i18n("downloading_progress", {
+                                                current = current,
+                                                total = total
+                                            })
+                                        end
+                                    }
+                                })
+                            end
+                        })
+                    end
+                },
+
+                {
+                    title = i18n("update_dxvk_version"),
+
+                    before = function() return should_update_dxvk end,
+
+                    perform = function(updater)
+                        local handle = archive.open(dxvk_download_output)
+
+                        -- dxvk_dir_path instead of dxvk_data_path because we expect
+                        -- every dxvk build archive to contain a parent folder inside.
+                        archive.extract(handle, dxvk_dir_path, function(current, total, diff)
+                            updater({
+                                progress = {
+                                    current = current,
+                                    total = total,
+
+                                    format = function()
+                                        local current = current / 1000 / 1000 / 1000
+                                        local total = total / 1000 / 1000 / 1000
+
+                                        current = math.floor(current * 100) / 100
+                                        total = math.floor(total * 100) / 100
+
+                                        return i18n("extraction_progress", {
+                                            current = current,
+                                            total = total
+                                        })
+                                    end
+                                }
+                            })
+                        end)
+
+                        archive.close(handle)
+
+                        fs.remove(dxvk_download_output)
+                    end
+                },
+
+                {
+                    title = i18n("update_dxvk_version"),
+
+                    before = function() return should_update_dxvk end,
+
+                    perform = function(updater)
+                        dxvk.install(settings.dxvk.selected, wine_prefix_path, curr_platform_arch)
+                    end
+                }
+            }
+        }
+    end
+
+    return {
+        game = {
+            get_status = function(variant: GameVariant)
                 if not get_runner_diff_pipeline(variant) then
                     return nil
                 end
@@ -451,10 +456,29 @@ return {
                 return "update-required"
             end,
 
-            get_game_diff = function(variant: GameVariant)
+            get_diff = function(variant: GameVariant)
                 return get_runner_diff_pipeline(variant)
             end,
 
+            -- This method will return the original table with modified properties,
+            -- so no standard-related properties will be missing even though
+            -- the data type is missing them.
+            wrap_launch_info = function(launch_info: GameLaunchInfo): GameLaunchInfo
+                local wine = import_wine()
+                local dxvk = import_dxvk()
+
+                local settings = get_settings(game_name)
+
+                local wine_prefix_path = path.join(wine_prefix_dir_path, settings.wine.prefix)
+
+                launch_info = wine.wrap_launch_command(settings.wine.selected, wine_prefix_path, launch_info)
+                launch_info = dxvk.wrap_launch_command(settings.dxvk.selected, launch_info)
+
+                return launch_info
+            end
+        },
+
+        settings = {
             get_property = function(name: string)
                 local settings_layout = get_settings_keys()
 
@@ -640,5 +664,5 @@ return {
                 }
             end
         }
-    end
-}
+    }
+end
