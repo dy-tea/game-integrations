@@ -14,9 +14,18 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+type DxvkInfo = {
+    name: string,
+    arch: string
+}
+
+local data_dir_path = path.persist_dir("components")
+local dxvk_dir_path = path.join(data_dir_path, "dxvk")
+
 return function(imports)
     local dxvk_versions_cache = nil
 
+    -- List all the available dxvk groups and their versions.
     local function get_versions()
         if not dxvk_versions_cache then
             dxvk_versions_cache = {}
@@ -38,14 +47,66 @@ return function(imports)
         return clone(dxvk_versions_cache)
     end
 
-    -- Install DXVK to the given wine prefix folder.
-    local function install(name: string, prefix: string)
-        local system32 = path.join(prefix, "drive_c", "windows", "system32")
+    -- Try to find features of the dxvk version with provided name.
+    local function get_version_features(name: string): Features | nil
+        for _, group in pairs(get_versions()) do
+            for _, version in pairs(group.versions) do
+                if version.name == name then
+                    return version.features
+                end
+            end
+        end
 
-        -- TODO
+        return nil
+    end
+
+    -- Install DXVK to the given wine prefix folder.
+    local function install(name: string, prefix: string, arch: "x32" | "x64")
+        local system32_dir_path  = path.join(prefix, "drive_c", "windows", "system32")
+        local dxvk_arch_dir_path = path.join(dxvk_dir_path, name, arch)
+
+        if not fs.exists(path.join(dxvk_arch_dir_path, "d3d11.dll")) then
+            error(`can't install invalid dxvk arch '{arch}' or version name '{name}'`)
+        end
+
+        if not fs.exists(path.join(system32_dir_path, "cmd.exe")) then
+            error(`can't install dxvk to invalid wine prefix system32 folder: '{system32_dir_path}'`)
+        end
+
+        for _, entry in fs.read_dir(dxvk_arch_dir_path) do
+            if entry.type == "file" and string.match(entry.name, ".+%.dll") then
+                local prefix_file_path = path.join(system32_dir_path, entry.name)
+
+                if fs.exists(prefix_file_path) then
+                    fs.remove(prefix_file_path)
+                end
+
+                fs.move(entry.path, prefix_file_path)
+            end
+        end
+
+        fs.write_file(path.join(prefix, ".dxvk"), str.encode({ name = name, arch = arch }, "json"))
+    end
+
+    -- Read name and arch of the dxvk version applied to the prefix.
+    local function get_prefix_dxvk_info(prefix: string): DxvkInfo | nil
+        local path = path.join(prefix, ".dxvk")
+
+        if not fs.exists(path) then
+            return nil
+        end
+
+        return str.decode(str.from_bytes(fs.read_file(path)), "json")
     end
 
     return {
-        get_versions = get_versions
+        versions = {
+            list = get_versions,
+            get_features = get_version_features
+        },
+        prefix = {
+            get_info = get_prefix_dxvk_info
+        },
+        install = install
     }
 end

@@ -14,6 +14,11 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+type GameVariant = {
+    platform: string,
+    edition: string
+}
+
 local data_dir_path = path.persist_dir("components")
 
 local wine_dir_path        = path.join(data_dir_path, "wine")
@@ -133,11 +138,11 @@ local function get_settings(game_name: string | nil): Settings
     local dxvk = import_dxvk()
 
     local function default_wine_version()
-        return iter(iter(wine.get_versions()).first().versions).first().name
+        return iter(iter(wine.versions.list()).first().versions).first().name
     end
 
     local function default_dxvk_version()
-        return iter(iter(dxvk.get_versions()).first().versions).first().name
+        return iter(iter(dxvk.versions.list()).first().versions).first().name
     end
 
     if not settings[game_name] then
@@ -163,7 +168,7 @@ local function get_settings(game_name: string | nil): Settings
     else
         settings[game_name].wine.prefix = filter_wine_prefix_name(settings[game_name].wine.prefix)
 
-        local valid_wine_version = iter(wine.get_versions())
+        local valid_wine_version = iter(wine.versions.list())
             .map(function(group)
                 return iter(group.versions)
                     .map(function(version) return version.name end)
@@ -175,7 +180,7 @@ local function get_settings(game_name: string | nil): Settings
             settings[game_name].wine.selected = default_wine_version()
         end
 
-        local valid_dxvk_version = iter(dxvk.get_versions())
+        local valid_dxvk_version = iter(dxvk.versions.list())
             .map(function(group)
                 return iter(group.versions)
                     .map(function(version) return version.name end)
@@ -205,8 +210,18 @@ return {
     -- Get special v1 game integration API handlers for given game name.
     -- Should be unique between games. This name is used to store per-game settings.
     handle_settings = function(game_name: string)
+        local function get_arch_from_platform(platform: string): string | nil
+            if string.gmatch(platform, "x86_64-.+") then
+                return "x64"
+            end
+
+            return nil
+        end
+
         -- Return pipeline of actions needed to prepare game runner.
-        local function get_runner_diff_pipeline()
+        local function get_runner_diff_pipeline(variant: GameVariant)
+            local curr_platform_arch = get_arch_from_platform(variant.platform) or error(`unsupported architecture: {variant.platform}`)
+
             local iter = import("iterable")
             local i18n = import("i18n").i18n
 
@@ -215,7 +230,7 @@ return {
 
             local settings = get_settings(game_name)
 
-            local selected_wine = iter(wine.get_versions())
+            local selected_wine = iter(wine.versions.list())
                 .map(function(group) return group.versions end)
                 .flatten()
                 .find(function(version) return version.name == settings.wine.selected end)
@@ -225,24 +240,39 @@ return {
                 error("Failed to find selected wine version")
             end
 
-            local wine_data_path = path.join(wine_dir_path, settings.wine.selected)
+            local selected_dxvk = iter(dxvk.versions.list())
+                .map(function(group) return group.versions end)
+                .flatten()
+                .find(function(version) return version.name == settings.dxvk.selected end)
+                .value
+
+            if not selected_dxvk then
+                error("Failed to find selected dxvk version")
+            end
+
+            local wine_data_path   = path.join(wine_dir_path, settings.wine.selected)
             local wine_prefix_path = path.join(wine_prefix_dir_path, settings.wine.prefix)
+            local dxvk_data_path   = path.join(dxvk_dir_path, settings.dxvk.selected)
 
-            local should_update_wine = not fs.exists(path.join(wine_data_path, selected_wine.features.binary))
+            local should_update_wine   = not fs.exists(path.join(wine_data_path, selected_wine.features.binary))
             local should_update_prefix = not wine.prefix.is_valid(wine_prefix_path) or wine.prefix.get_wine_name(wine_prefix_path) ~= settings.wine.selected
+            local should_update_dxvk   = dxvk.prefix.get_info(wine_prefix_path) or { name = "", arch = "" }
 
-            if not should_update_wine and not should_update_prefix then
+            should_update_dxvk = should_update_dxvk.name ~= settings.dxvk.selected or should_update_dxvk.arch ~= curr_platform_arch
+
+            if not should_update_wine and not should_update_prefix and not should_update_dxvk then
                 return nil
             end
 
             local wine_download_output = path.join(path.temp_dir(), selected_wine.file)
+            local dxvk_download_output = path.join(path.temp_dir(), selected_dxvk.file)
 
             return {
-                title = i18n("update_game_runner") or "Update game runner",
+                title = i18n("update_game_runner"),
 
                 pipeline = {
                     {
-                        title = i18n("update_wine_version") or "Update wine version",
+                        title = i18n("update_wine_version"),
 
                         before = function() return should_update_wine end,
 
@@ -267,7 +297,7 @@ return {
                                                 return i18n("downloading_progress", {
                                                     current = current,
                                                     total = total
-                                                }) or `Downloading: {current / total * 100}%`
+                                                })
                                             end
                                         }
                                     })
@@ -277,7 +307,7 @@ return {
                     },
 
                     {
-                        title = i18n("update_wine_version") or "Update wine version",
+                        title = i18n("update_wine_version"),
 
                         before = function() return should_update_wine end,
 
@@ -302,7 +332,7 @@ return {
                                             return i18n("extraction_progress", {
                                                 current = current,
                                                 total = total
-                                            }) or `Extracting: {current / total * 100}%`
+                                            })
                                         end
                                     }
                                 })
@@ -315,7 +345,7 @@ return {
                     },
 
                     {
-                        title = i18n("update_wine_prefix") or "Update wine prefix",
+                        title = i18n("update_wine_prefix"),
 
                         before = function() return should_update_prefix end,
 
@@ -324,22 +354,105 @@ return {
 
                             wine.prefix.update(settings.wine.selected, wine_prefix_path)
                         end
+                    },
+
+                    {
+                        title = i18n("update_dxvk_version"),
+
+                        before = function() return should_update_dxvk end,
+
+                        perform = function(updater)
+                            downloader.download(selected_dxvk.url, {
+                                output_file = dxvk_download_output,
+                                continue_downloading = true,
+
+                                progress = function(current, total, diff)
+                                    updater({
+                                        progress = {
+                                            current = current,
+                                            total = total,
+
+                                            format = function()
+                                                local current = current / 1000 / 1000 / 1000
+                                                local total = total / 1000 / 1000 / 1000
+
+                                                current = math.floor(current * 100) / 100
+                                                total = math.floor(total * 100) / 100
+
+                                                return i18n("downloading_progress", {
+                                                    current = current,
+                                                    total = total
+                                                })
+                                            end
+                                        }
+                                    })
+                                end
+                            })
+                        end
+                    },
+
+                    {
+                        title = i18n("update_dxvk_version"),
+
+                        before = function() return should_update_dxvk end,
+
+                        perform = function(updater)
+                            local handle = archive.open(dxvk_download_output)
+
+                            -- dxvk_dir_path instead of dxvk_data_path because we expect
+                            -- every dxvk build archive to contain a parent folder inside.
+                            archive.extract(handle, dxvk_dir_path, function(current, total, diff)
+                                updater({
+                                    progress = {
+                                        current = current,
+                                        total = total,
+
+                                        format = function()
+                                            local current = current / 1000 / 1000 / 1000
+                                            local total = total / 1000 / 1000 / 1000
+
+                                            current = math.floor(current * 100) / 100
+                                            total = math.floor(total * 100) / 100
+
+                                            return i18n("extraction_progress", {
+                                                current = current,
+                                                total = total
+                                            })
+                                        end
+                                    }
+                                })
+                            end)
+
+                            archive.close(handle)
+
+                            fs.remove(dxvk_download_output)
+                        end
+                    },
+
+                    {
+                        title = i18n("update_dxvk_version"),
+
+                        before = function() return should_update_dxvk end,
+
+                        perform = function(updater)
+                            dxvk.install(settings.dxvk.selected, wine_prefix_path, curr_platform_arch)
+                        end
                     }
                 }
             }
         end
 
         return {
-            get_game_status = function()
-                if not get_runner_diff_pipeline() then
+            get_game_status = function(variant: GameVariant)
+                if not get_runner_diff_pipeline(variant) then
                     return nil
                 end
 
                 return "update-required"
             end,
 
-            get_game_diff = function()
-                return get_runner_diff_pipeline()
+            get_game_diff = function(variant: GameVariant)
+                return get_runner_diff_pipeline(variant)
             end,
 
             get_property = function(name: string)
@@ -396,13 +509,13 @@ return {
 
                 return {
                     {
-                        title = i18n("game_runner") or "Game runner",
+                        title = i18n("game_runner"),
 
                         entries = {
                             {
                                 name = "wine.prefix",
 
-                                title = i18n("wine_prefix_name") or "Wine prefix name",
+                                title = i18n("wine_prefix_name"),
                                 description = i18n("wine_prefix_name_description"),
 
                                 entry = {
@@ -413,12 +526,12 @@ return {
 
                             {
                                 name = "wine.selected",
-                                title = i18n("wine_version") or "Wine version",
+                                title = i18n("wine_version"),
 
                                 entry = {
                                     format = "enum",
 
-                                    values = iter(wine.get_versions())
+                                    values = iter(wine.versions.list())
                                         .map(function(group)
                                             return iter(group.versions)
                                                 .map(function(version)
@@ -445,12 +558,12 @@ return {
 
                             {
                                 name = "dxvk.selected",
-                                title = i18n("dxvk_version") or "DXVK version",
+                                title = i18n("dxvk_version"),
 
                                 entry = {
                                     format = "enum",
 
-                                    values = iter(dxvk.get_versions())
+                                    values = iter(dxvk.versions.list())
                                         .map(function(group)
                                             return iter(group.versions)
                                                 .map(function(version)
@@ -476,12 +589,12 @@ return {
                             },
 
                             {
-                                title = i18n("available_wine_editions") or "Available wine editions",
+                                title = i18n("available_wine_editions"),
 
                                 entry = {
                                     format = "expandable",
 
-                                    entries = iter(wine.get_versions())
+                                    entries = iter(wine.versions.list())
                                         .map(function(group)
                                             return {
                                                 name = `wine.groups.{group.name}`,
@@ -500,12 +613,12 @@ return {
                             },
 
                             {
-                                title = i18n("available_dxvk_editions") or "Available DXVK editions",
+                                title = i18n("available_dxvk_editions"),
 
                                 entry = {
                                     format = "expandable",
 
-                                    entries = iter(dxvk.get_versions())
+                                    entries = iter(dxvk.versions.list())
                                         .map(function(group)
                                             return {
                                                 name = `dxvk.groups.{group.name}`,

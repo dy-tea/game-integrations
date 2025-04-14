@@ -42,6 +42,10 @@ ru = "Обновить версию Wine"
 en = "Update wine prefix"
 ru = "Обновить префикс Wine"
 
+[update_dxvk_version]
+en = "Update DXVK version"
+ru = "Обновить версию DXVK"
+
 [install]
 en = "Install"
 ru = "Установить"
