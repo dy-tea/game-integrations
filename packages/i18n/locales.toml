@@ -2,6 +2,14 @@
 en = "Game"
 ru = "Игра"
 
+[default_game_edition]
+en = "Default"
+ru = "Стандартная"
+
+[game_version]
+en = "Game version"
+ru = "Версия игры"
+
 [game_runner]
 en = "Game runner"
 ru = "Окружение запуска игры"
@@ -46,9 +54,21 @@ ru = "Обновить префикс Wine"
 en = "Update DXVK version"
 ru = "Обновить версию DXVK"
 
+[download]
+en = "Download"
+ru = "Загрузить"
+
+[download_game_files]
+en = "Download game files"
+ru = "Загрузить файлы игры"
+
 [install]
 en = "Install"
 ru = "Установить"
+
+[install_game]
+en = "Install game"
+ru = "Установить игру"
 
 [update]
 en = "Update"
@@ -58,13 +78,17 @@ ru = "Обновить"
 en = "Extract"
 ru = "Распаковать"
 
+[extract_game_files]
+en = "Extract game files"
+ru = "Распаковать файлы игры"
+
 [delete]
 en = "Delete"
 ru = "Удалить"
 
-[install_game]
-en = "Install game"
-ru = "Установить игру"
+[delete_old_files]
+en = "Delete old files"
+ru = "Удалить старые файлы"
 
 [downloading_progress]
 en = "Downloaded {current} GB / {total} GB"
