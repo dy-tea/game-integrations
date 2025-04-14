@@ -91,7 +91,7 @@ return {
 
     game = {
         get_status = function(variant: Variant)
-            local status = get_components_settings().get_game_status()
+            local status = get_components_settings().get_game_status(variant)
 
             if status then
                 return status
@@ -105,7 +105,7 @@ return {
         end,
 
         get_diff = function(variant: Variant)
-            local diff = get_components_settings().get_game_diff()
+            local diff = get_components_settings().get_game_diff(variant)
 
             if diff then
                 return diff

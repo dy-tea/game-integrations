@@ -43,6 +43,7 @@ local wine_dir_path = path.join(data_dir_path, "wine")
 return function(imports)
     local wine_versions_cache = nil
 
+    -- List all the available wine groups and their versions.
     local function get_versions()
         if not wine_versions_cache then
             wine_versions_cache = {}
@@ -169,7 +170,10 @@ return function(imports)
     end
 
     return {
-        get_versions = get_versions,
+        versions = {
+            list = get_versions,
+            get_features = get_version_features
+        },
         prefix = {
             is_valid = is_valid_prefix,
             update = update_prefix,

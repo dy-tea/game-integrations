@@ -1,4 +1,4 @@
--- i18n v1.0.0
+-- i18n v1.0.1
 -- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -23,32 +23,18 @@ local function get_translations(name: string): table | nil
         locales_cache = str.decode(str.from_bytes(locales), "toml")
     end
 
-    -- Try to directly index translation by the given name.
     if locales_cache[name] then
         return locales_cache[name]
-    end
-
-    -- Try to pattern match against translation keys and texts on each language.
-    for translation_name, translations in pairs(locales_cache) do
-        if translation_name:match(name) then
-            return translations
-        end
-
-        for _, translation in pairs(translations) do
-            if translation:match(name) then
-                return translations
-            end
-        end
     end
 
     return nil
 end
 
-return function(name: string, options: table | nil): string | nil
+return function(name: string, options: table | nil): string
     local translations = get_translations(name)
 
     if not options or not translations then
-        return translations
+        return translations or name
     end
 
     for lang, translation in pairs(translations) do
