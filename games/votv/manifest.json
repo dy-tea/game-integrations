@@ -13,7 +13,11 @@
             "poster": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/poster.jpg",
             "background": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/background.jpg",
             "slides": [
-                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/slide1.jpg"
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/slide1.jpg",
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/slide2.png",
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/slide3.png",
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/slide4.png",
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/slide5.png"
             ]
         }
     },
