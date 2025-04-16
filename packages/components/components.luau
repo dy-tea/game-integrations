@@ -214,6 +214,8 @@ end
 ------------------------------------------------- Module -------------------------------------------------
 
 return function(game_name: string)
+    local downloader_handle = downloader.create()
+
     local function get_arch_from_platform(platform: string): string | nil
         if string.gmatch(platform, "x86_64-.+") then
             return "x64"
@@ -281,11 +283,12 @@ return function(game_name: string)
                     before = function() return should_update_wine end,
 
                     perform = function(updater)
-                        downloader.download(selected_wine.url, {
+                        local handle = downloader.download(downloader_handle, {
+                            url = selected_wine.url,
                             output_file = wine_download_output,
-                            continue_downloading = true,
+                            continue_download = true,
 
-                            progress = function(current, total, diff)
+                            on_update = function(current, total)
                                 updater({
                                     progress = {
                                         current = current,
@@ -295,18 +298,17 @@ return function(game_name: string)
                                             local current = current / 1000 / 1000 / 1000
                                             local total = total / 1000 / 1000 / 1000
 
-                                            current = math.floor(current * 100) / 100
-                                            total = math.floor(total * 100) / 100
-
                                             return i18n("downloading_progress", {
-                                                current = current,
-                                                total = total
+                                                current = math.floor(current * 100) / 100,
+                                                total = math.floor(total * 100) / 100
                                             })
                                         end
                                     }
                                 })
                             end
                         })
+
+                        downloader.wait(handle)
                     end
                 },
 
@@ -330,12 +332,9 @@ return function(game_name: string)
                                         local current = current / 1000 / 1000 / 1000
                                         local total = total / 1000 / 1000 / 1000
 
-                                        current = math.floor(current * 100) / 100
-                                        total = math.floor(total * 100) / 100
-
                                         return i18n("extraction_progress", {
-                                            current = current,
-                                            total = total
+                                            current = math.floor(current * 100) / 100,
+                                            total = math.floor(total * 100) / 100
                                         })
                                     end
                                 }
@@ -366,11 +365,12 @@ return function(game_name: string)
                     before = function() return should_update_dxvk end,
 
                     perform = function(updater)
-                        downloader.download(selected_dxvk.url, {
+                        local handle = downloader.download(downloader_handle, {
+                            url = selected_dxvk.url,
                             output_file = dxvk_download_output,
-                            continue_downloading = true,
+                            continue_download = true,
 
-                            progress = function(current, total, diff)
+                            progress = function(current, total)
                                 updater({
                                     progress = {
                                         current = current,
@@ -380,18 +380,17 @@ return function(game_name: string)
                                             local current = current / 1000 / 1000 / 1000
                                             local total = total / 1000 / 1000 / 1000
 
-                                            current = math.floor(current * 100) / 100
-                                            total = math.floor(total * 100) / 100
-
                                             return i18n("downloading_progress", {
-                                                current = current,
-                                                total = total
+                                                current = math.floor(current * 100) / 100,
+                                                total = math.floor(total * 100) / 100
                                             })
                                         end
                                     }
                                 })
                             end
                         })
+
+                        downloader.wait(handle)
                     end
                 },
 
@@ -415,12 +414,9 @@ return function(game_name: string)
                                         local current = current / 1000 / 1000 / 1000
                                         local total = total / 1000 / 1000 / 1000
 
-                                        current = math.floor(current * 100) / 100
-                                        total = math.floor(total * 100) / 100
-
                                         return i18n("extraction_progress", {
-                                            current = current,
-                                            total = total
+                                            current = math.floor(current * 100) / 100,
+                                            total = math.floor(total * 100) / 100
                                         })
                                     end
                                 }

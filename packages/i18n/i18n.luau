@@ -24,7 +24,7 @@ local function get_translations(name: string): table | nil
     end
 
     if locales_cache[name] then
-        return locales_cache[name]
+        return clone(locales_cache[name])
     end
 
     return nil
