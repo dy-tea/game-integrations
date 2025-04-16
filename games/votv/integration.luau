@@ -198,11 +198,14 @@ return {
                         title = i18n("download_game_files"),
 
                         perform = function(updater)
-                            downloader.download(info.url, {
-                                output_file = archive_path,
-                                continue_downloading = true,
+                            local downloader_handle = downloader.create()
 
-                                progress = function(current, total, diff)
+                            local task_handle = downloader.download(downloader_handle, {
+                                url = info.url,
+                                output_file = archive_path,
+                                continue_download = true,
+
+                                on_update = function(current, total)
                                     updater({
                                         progress = {
                                             current = current,
@@ -221,6 +224,9 @@ return {
                                     })
                                 end
                             })
+
+                            downloader.wait(task_handle)
+                            downloader.close(downloader_handle)
                         end
                     },
 
