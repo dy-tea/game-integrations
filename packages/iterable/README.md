@@ -1,4 +1,4 @@
-# Iterable v1.3.1
+# Iterable v1.4.0
 
 Advanced iterators syntax implementation for luau.
 
@@ -173,17 +173,30 @@ local greeting = iter({ "Hello", " ", "World" })
 print(greeting)
 ```
 
-### `find((T) -> boolean): Item<T>?`
+### `position((Item<T>) -> boolean): Item<T>?`
 
 Try to find iterator item using provided search function.
 
 ```luau
 local iter = import("iterable")
 
-local item = iter({ 1, 2, 3 }).find(function(num) return num % 2 == 0 end)
+local item = iter({ 1, 2, 3 }).position(function(item) return item.value % 2 == 0 end)
 
 print(item.key)   -- 2
 print(item.value) -- 2
+```
+
+### `find((T) -> boolean): T?`
+
+Try to find iterator item using provided search function.
+Similar to `position`, except it works with values only.
+
+```luau
+local iter = import("iterable")
+
+local item = iter({ 1, 2, 3 }).find(function(num) return num % 2 == 0 end)
+
+print(item) -- 2
 ```
 
 ### `any((T) -> boolean): boolean`
