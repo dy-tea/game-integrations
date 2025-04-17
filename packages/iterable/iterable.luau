@@ -1,4 +1,4 @@
--- iterable v1.3.1
+-- iterable v1.4.0
 -- Copyright (C) 2024 - 2025  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -30,7 +30,8 @@ type Iterable<T> = {
     filter: ((T) -> boolean) -> Iterable<T>,
     for_each: ((Item<T>) -> ()) -> Iterable<T>,
     fold: <F>(F, (F, T) -> F) -> F,
-    find: ((T) -> boolean) -> Item<T>?,
+    position: ((Item<T>) -> boolean) -> Item<T>?,
+    find: ((T) -> boolean) -> T?,
     any: ((T) -> boolean) -> boolean,
     chain: (Iterable<T> | {T}) -> Iterable<T>,
     flatten: <F>() -> Iterable<F>,
@@ -159,13 +160,28 @@ local function iter<T>(table: { T }): Iterable<T>
         return init
     end
 
+    -- print(iter({ 1, 2, 3 }).position(function(item) return item.value == 2 end).key == 2)
+    local function position(comparator: (Item<T>) -> boolean): Item<T>?
+        local item = next()
+
+        while item do
+            if comparator(item) then
+                return item
+            end
+
+            item = next()
+        end
+
+        return nil
+    end
+
     -- print(iter({ 1, 2, 3 }).find(function(num) return num == 2 end).value == 2)
-    local function find(comparator: (T) -> boolean): Item<T>?
+    local function find(comparator: (T) -> boolean): T?
         local item = next()
 
         while item do
             if comparator(item.value) then
-                return item
+                return item.value
             end
 
             item = next()
@@ -342,6 +358,7 @@ local function iter<T>(table: { T }): Iterable<T>
         filter = filter,
         for_each = for_each,
         fold = fold,
+        position = position,
         find = find,
         any = any,
         chain = chain,

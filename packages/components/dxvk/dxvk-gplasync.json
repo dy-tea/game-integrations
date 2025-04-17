@@ -1,6 +1,6 @@
 [
     {
-        "name": "dxvk-gplasync-2.6-1",
+        "name": "dxvk-gplasync-v2.6-1",
         "title": "dxvk-gplasync 2.6-1",
         "url": "https://gitlab.com/Ph42oN/dxvk-gplasync/-/raw/main/releases/dxvk-gplasync-v2.6-1.tar.gz",
         "file": "dxvk-gplasync-v2.6-1.tar.gz",
@@ -12,7 +12,7 @@
         }
     },
     {
-        "name": "dxvk-gplasync-2.5.3-1",
+        "name": "dxvk-gplasync-v2.5.3-1",
         "title": "dxvk-gplasync 2.5.3-1",
         "url": "https://gitlab.com/Ph42oN/dxvk-gplasync/-/raw/main/releases/dxvk-gplasync-v2.5.3-1.tar.gz",
         "file": "dxvk-gplasync-v2.5.3-1.tar.gz",
@@ -24,7 +24,7 @@
         }
     },
     {
-        "name": "dxvk-gplasync-2.5.2-1",
+        "name": "dxvk-gplasync-v2.5.2-1",
         "title": "dxvk-gplasync 2.5.2-1",
         "url": "https://gitlab.com/Ph42oN/dxvk-gplasync/-/raw/main/releases/dxvk-gplasync-v2.5.2-1.tar.gz",
         "file": "dxvk-gplasync-v2.5.2-1.tar.gz",
@@ -36,7 +36,7 @@
         }
     },
     {
-        "name": "dxvk-gplasync-2.5.1-2",
+        "name": "dxvk-gplasync-v2.5.1-2",
         "title": "dxvk-gplasync 2.5.1-2",
         "url": "https://gitlab.com/Ph42oN/dxvk-gplasync/-/raw/main/releases/dxvk-gplasync-v2.5.1-2.tar.gz",
         "file": "dxvk-gplasync-v2.5.1-2.tar.gz",
@@ -48,7 +48,7 @@
         }
     },
     {
-        "name": "dxvk-gplasync-2.5.1-1",
+        "name": "dxvk-gplasync-v2.5.1-1",
         "title": "dxvk-gplasync 2.5.1-1",
         "url": "https://gitlab.com/Ph42oN/dxvk-gplasync/-/raw/main/releases/dxvk-gplasync-v2.5.1-1.tar.gz",
         "file": "dxvk-gplasync-v2.5.1-1.tar.gz",
@@ -60,7 +60,7 @@
         }
     },
     {
-        "name": "dxvk-gplasync-2.5-1",
+        "name": "dxvk-gplasync-v2.5-1",
         "title": "dxvk-gplasync 2.5-1",
         "url": "https://gitlab.com/Ph42oN/dxvk-gplasync/-/raw/main/releases/dxvk-gplasync-v2.5-1.tar.gz",
         "file": "dxvk-gplasync-v2.5-1.tar.gz",

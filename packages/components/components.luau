@@ -16,6 +16,35 @@
 
 --!nocheck
 
+type Settings = {
+    wine: {
+        prefix: string,
+        selected: string,
+        groups: {
+            -- https://github.com/Kron4ek/Wine-Builds
+            wine_staging_tkg: boolean
+        }
+    },
+    dxvk: {
+        selected: string,
+        groups: {
+            -- https://github.com/doitsujin/dxvk
+            dxvk: boolean,
+
+            -- https://gitlab.com/Ph42oN/dxvk-gplasync
+            dxvk_gplasync: boolean
+        }
+    }
+}
+
+type Options = {
+    game: string,
+    settings: {
+        get_property: (name: string) -> any,
+        set_property: (name: string, value: any) -> ()
+    }
+}
+
 type GameVariant = {
     platform: string,
     edition: string
@@ -34,8 +63,6 @@ local wine_dir_path: string        = path.join(data_dir_path, "wine")
 local wine_prefix_dir_path: string = path.join(data_dir_path, "prefix")
 local dxvk_dir_path: string        = path.join(data_dir_path, "dxvk")
 
-local settings_file_path: string = path.join(data_dir_path, "settings.json")
-
 ------------------------------------------------- Imports -------------------------------------------------
 
 -- Since inputs of a package can't access other inputs
@@ -43,180 +70,102 @@ local settings_file_path: string = path.join(data_dir_path, "settings.json")
 -- with all the necessary info.
 
 local function import_wine()
-    local wine = import("wine")
-
-    return wine({
+    return import("wine")({
         wine_staging_tkg = fs.read_file(import("wine-staging-tkg-src"))
     })
 end
 
 local function import_dxvk()
-    local wine = import("dxvk")
-
-    return wine({
+    return import("dxvk")({
         dxvk = fs.read_file(import("dxvk-src")),
         dxvk_gplasync = fs.read_file(import("dxvk-gplasync-src"))
     })
 end
 
-------------------------------------------------- Settings -------------------------------------------------
+------------------------------------------------- Module -------------------------------------------------
 
-type Settings = {
-    wine: {
-        prefix: string,
-        selected: string,
+local downloader_handle: number = downloader.create()
 
-        groups: {
-            -- https://github.com/Kron4ek/Wine-Builds
-            wine_staging_tkg: boolean
-        }
-    },
+return function(options: Options)
+    local function get_settings(): Settings
+        local iter = import("iterable")
 
-    dxvk: {
-        selected: string,
+        local wine = import_wine()
+        local dxvk = import_dxvk()
 
-        groups: {
-            -- https://github.com/doitsujin/dxvk
-            dxvk: boolean,
-
-            -- https://gitlab.com/Ph42oN/dxvk-gplasync
-            dxvk_gplasync: boolean
-        }
-    }
-}
-
-local function filter_wine_prefix_name(name: string?): string
-    if name then
-        name = name:gsub("^%s+", "")
-    	name = name:gsub("%s+$", "")
-    	name = name:gsub("[^%a%d]", "_")
-    end
-
-	if not name or string.len(name) == 0 then
-	   name = "games"
-	end
-
-	return name or "games"
-end
-
-local function get_settings_keys(): { [string]: { path: { string }, setter: (string?) -> string } }
-    local function identity(value) return value end
-
-    local keys = {
-        ["wine.prefix"] = filter_wine_prefix_name,
-        ["wine.selected"] = identity,
-        ["wine.groups.wine_staging_tkg"] = identity,
-
-        ["dxvk.selected"] = identity,
-        ["dxvk.groups.dxvk"] = identity,
-        ["dxvk.groups.dxvk_gplasync"] = identity
-    }
-
-    local values = {}
-
-    for key, setter in pairs(keys) do
-        local path = {}
-
-        for component in key:gmatch("([^%.]+)") do
-            table.insert(path, component)
+        local function default_wine_version(): string
+            return iter(iter(wine.versions.list()).first().versions).first().name
         end
 
-        values[key] = {
-            path = path,
-            setter = setter
-        }
-    end
+        local function default_dxvk_version(): string
+            return iter(iter(dxvk.versions.list()).first().versions).first().name
+        end
 
-    return values
-end
+        local function validate_wine_version(version: string?): string
+            local valid = iter(wine.versions.list())
+                .map(function(group) return group.versions end)
+                .flatten()
+                .any(function(entry) return entry.name == version end)
 
-local function get_settings(game_name: string | nil): Settings
-    if not path.exists(settings_file_path) then
-        fs.write_file(settings_file_path, str.to_bytes("{}"))
-    end
+            if not valid then
+                return default_wine_version()
+            else
+                return version
+            end
+        end
 
-    local settings = str.decode(str.from_bytes(fs.read_file(settings_file_path)), "json")
+        local function validate_dxvk_version(version: string?): string
+            local valid = iter(dxvk.versions.list())
+                .map(function(group) return group.versions end)
+                .flatten()
+                .any(function(entry) return entry.name == version end)
 
-    if not game_name then
-        return settings
-    end
+            if not valid then
+                return default_dxvk_version()
+            else
+                return version
+            end
+        end
 
-    local iter = import("iterable")
+        local function filter_wine_prefix_name(name: string?): string
+            if name then
+                name = name:gsub("^%s+", "")
+            	name = name:gsub("%s+$", "")
+            	name = name:gsub("[^%a%d]", "_")
+            end
 
-    local wine = import_wine()
-    local dxvk = import_dxvk()
+        	if not name or string.len(name) == 0 then
+        	   name = "games"
+        	end
 
-    local function default_wine_version(): string
-        return iter(iter(wine.versions.list()).first().versions).first().name
-    end
+        	return name or "games"
+        end
 
-    local function default_dxvk_version(): string
-        return iter(iter(dxvk.versions.list()).first().versions).first().name
-    end
+        local function default(value: any, default: any): any
+            if value == nil then
+                return default
+            else
+                return value
+            end
+        end
 
-    if not settings[game_name] then
-        settings[game_name] = {
+        return {
             wine = {
-                prefix = "games",
-                selected = default_wine_version(),
-
+                prefix = filter_wine_prefix_name(options.settings.get_property("wine.prefix")),
+                selected = validate_wine_version(options.settings.get_property("wine.selected")),
                 groups = {
-                    wine_staging_tkg = true
+                    wine_staging_tkg = default(options.settings.get_property("wine.groups.wine_staging_tkg"), true)
                 }
             },
-
             dxvk = {
-                selected = default_dxvk_version(),
-
+                selected = validate_dxvk_version(options.settings.get_property("dxvk.selected")),
                 groups = {
-                    dxvk = true,
-                    dxvk_gplasync = true
+                    dxvk = default(options.settings.get_property("dxvk.groups.dxvk"), true),
+                    dxvk_gplasync = default(options.settings.get_property("dxvk.groups.dxvk_gplasync"), true)
                 }
             }
         }
-    else
-        settings[game_name].wine.prefix = filter_wine_prefix_name(settings[game_name].wine.prefix)
-
-        local valid_wine_version: boolean = iter(wine.versions.list())
-            .map(function(group)
-                return iter(group.versions)
-                    .map(function(version) return version.name end)
-            end)
-            .flatten()
-            .any(function(version) return version == settings[game_name].wine.selected end)
-
-        if not valid_wine_version then
-            settings[game_name].wine.selected = default_wine_version()
-        end
-
-        local valid_dxvk_version: boolean = iter(dxvk.versions.list())
-            .map(function(group)
-                return iter(group.versions)
-                    .map(function(version) return version.name end)
-            end)
-            .flatten()
-            .any(function(version) return version == settings[game_name].wine.selected end)
-
-        if not valid_dxvk_version then
-            settings[game_name].dxvk.selected = default_dxvk_version()
-        end
     end
-
-    return settings[game_name]
-end
-
-local function set_settings(game_name: string, settings: Settings)
-    local full_settings = get_settings(nil)
-
-    full_settings[game_name] = settings
-
-    fs.write_file(settings_file_path, str.to_bytes(str.encode(full_settings, "json")))
-end
-
-------------------------------------------------- Module -------------------------------------------------
-
-return function(game_name: string)
-    local downloader_handle: number = downloader.create()
 
     local function get_arch_from_platform(platform: string): "x64" | nil
         if string.gmatch(platform, "x86_64-.+") then
@@ -236,13 +185,12 @@ return function(game_name: string)
         local wine = import_wine()
         local dxvk = import_dxvk()
 
-        local settings = get_settings(game_name)
+        local settings = get_settings()
 
         local selected_wine = iter(wine.versions.list())
             .map(function(group) return group.versions end)
             .flatten()
             .find(function(version) return version.name == settings.wine.selected end)
-            .value
 
         if not selected_wine then
             error("Failed to find selected wine version")
@@ -252,7 +200,6 @@ return function(game_name: string)
             .map(function(group) return group.versions end)
             .flatten()
             .find(function(version) return version.name == settings.dxvk.selected end)
-            .value
 
         if not selected_dxvk then
             error("Failed to find selected dxvk version")
@@ -271,8 +218,8 @@ return function(game_name: string)
             return nil
         end
 
-        local wine_download_output = path.join(path.temp_dir(), selected_wine.file)
-        local dxvk_download_output = path.join(path.temp_dir(), selected_dxvk.file)
+        local wine_download_output: string = path.join(path.temp_dir(), selected_wine.file)
+        local dxvk_download_output: string = path.join(path.temp_dir(), selected_dxvk.file)
 
         return {
             title = i18n("update_game_runner"),
@@ -464,7 +411,7 @@ return function(game_name: string)
                 local wine = import_wine()
                 local dxvk = import_dxvk()
 
-                local settings = get_settings(game_name)
+                local settings = get_settings()
 
                 local wine_prefix_path: string = path.join(wine_prefix_dir_path, settings.wine.prefix)
 
@@ -476,48 +423,8 @@ return function(game_name: string)
         },
 
         settings = {
-            get_property = function(name: string): any
-                local settings_layout = get_settings_keys()
-
-                if not settings_layout[name] then
-                    return nil
-                end
-
-                local settings = get_settings(game_name)
-
-                for _, component in pairs(settings_layout[name].path) do
-                    settings = settings[component]
-                end
-
-                return settings
-            end,
-
-            -- Return true if property is set, otherwise false.
-            set_property = function(name: string, value: any): boolean
-                local settings_layout = get_settings_keys()
-
-                if not settings_layout[name] then
-                    return false
-                end
-
-                local settings = get_settings(game_name)
-                local traversable = settings
-
-                for i, key in ipairs(settings_layout[name].path) do
-                    -- If you change a key of a table - its value will be updated
-                    -- even if this table is nested due to lua tables quirks.
-                    -- We're abusing this feature here.
-                    if i == #settings_layout[name].path then
-                        traversable[key] = settings_layout[name].setter(value)
-                    else
-                        traversable = traversable[key]
-                    end
-                end
-
-                set_settings(game_name, settings)
-
-                return true
-            end,
+            get_property = options.settings.get_property,
+            set_property = options.settings.set_property,
 
             get_layout = function(): any
                 local iter = import("iterable")
@@ -526,7 +433,7 @@ return function(game_name: string)
                 local wine = import_wine()
                 local dxvk = import_dxvk()
 
-                local settings = get_settings(game_name)
+                local settings = get_settings()
 
                 return {
                     {
