@@ -14,6 +14,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+--!nocheck
+
 type Localizable = string | { [string]: string }
 
 type GameVariant = {
@@ -108,21 +110,6 @@ type EntryFormatExpandable = {
 
 -------------------------------- Module --------------------------------
 
-local settings: number = sqlite.open(path.join(path.persist_dir("settings"), "settings.db"))
-
-sqlite.batch(settings, [[
-    CREATE TABLE IF NOT EXISTS settings (
-        game_name    TEXT NOT NULL,
-        group_name   TEXT NOT NULL,
-        entry_name   TEXT NOT NULL,
-        value        TEXT,
-
-        PRIMARY KEY (game_name, group_name, entry_name)
-    );
-
-    PRAGMA optimize;
-]])
-
 local function serialize(value: any): string?
     if typeof(value) == "string" then
         return `s:{value}`
@@ -161,74 +148,87 @@ local function deserialize(value: string): any
     end
 end
 
-type EntryInfo = {
-    key: string,
-    game_name: string,
-    group_name: string,
-    entry_name: string,
-    options: BuilderEntryOptions,
-    default: any
-}
+local settings: number = sqlite.open(path.join(path.persist_dir("settings"), "settings.db"))
 
-local function get_property(entry: EntryInfo): any
-    local value: { string }? = sqlite.query_row(
-        settings,
-        "SELECT value FROM settings WHERE game_name = ?1 AND group_name = ?2 AND entry_name = ?3",
-        { entry.game_name, entry.group_name, entry.entry_name }
-    )
+sqlite.batch(settings, [[
+    CREATE TABLE IF NOT EXISTS settings (
+        game  TEXT NOT NULL,
+        key   TEXT NOT NULL,
+        value TEXT NOT NULL,
+
+        PRIMARY KEY (game, key)
+    );
+
+    PRAGMA optimize;
+]])
+
+local function get_raw_property(game: string, key: string): any
+    local value: { string }? = sqlite.query_row(settings, "SELECT value FROM settings WHERE game = ?1 AND key = ?2", { game, key })
 
     if not value then
-        return entry.default
-    elseif entry.options.get then
-        return entry.options.get(deserialize(value[1])) or entry.default
+        return nil
     else
         return deserialize(value[1])
     end
 end
 
-local function set_property(entry: EntryInfo, value: any)
-    if entry.options.set then
-        value = serialize(entry.options.set(value))
-    else
-        value = serialize(value)
-    end
+local function set_raw_property(game: string, key: string, value: any)
+    value = serialize(value)
 
     if not value then
-        sqlite.execute(
-            settings,
-            "DELETE FROM settings WHERE game_name = ?1 AND group_name = ?2 AND entry_name = ?3",
-            { entry.game_name, entry.group_name, entry.entry_name }
-        )
+        sqlite.execute(settings, "DELETE FROM settings WHERE game = ?1 AND key = ?2", { game, key })
     else
-        sqlite.execute(
-            settings,
-            "INSERT OR REPLACE INTO settings (game_name, group_name, entry_name, value) VALUES (?1, ?2, ?3, ?4)",
-            { entry.game_name, entry.group_name, entry.entry_name, value }
-        )
+        sqlite.execute(settings, "INSERT OR REPLACE INTO settings (game, key, value) VALUES (?1, ?2, ?3)", { game, key, value })
     end
 end
 
 return function(options: BuilderOptions)
-    local entries: { [string]: EntryInfo } = {}
+    local entries = {}
 
     for group_name, group in pairs(options.layout) do
         for entry_name, entry in pairs(group.entries) do
             local key = `{group_name}.{entry_name}`
 
+            local entry_options = entry.options or {}
+
             entries[key] = {
                 key = key,
-                game_name = options.game,
-                group_name = group_name,
-                entry_name = entry_name,
-                options = entry.options or {},
+                get = entry_options.get or nil,
+                set = entry_options.set or nil,
                 default = entry.entry.default
             }
         end
     end
 
+    local function get_property(key: string): any
+        local value = get_raw_property(options.game, key)
+
+        if entries[key] then
+            if entries[key].get then
+                value = entries[key].get(value)
+            end
+
+            if entries[key].default ~= nil and value == nil then
+                value = entries[key].default
+            end
+        end
+
+        return value
+    end
+
+    local function set_property(key: string, value: any)
+        if entries[key] then
+            if entries[key].set then
+                value = entries[key].set(value)
+            end
+        end
+
+        set_raw_property(options.game, key, value)
+    end
+
     return {
-        get_property = function(key: string) return get_property(entries[key]) end,
-        set_property = function(key: string, value: any) set_property(entries[key], value) end,
+        get_property = get_property,
+        set_property = set_property,
 
         get_layout = function(variant: GameVariant): { GroupLayout }
             local layout = {}
@@ -243,7 +243,7 @@ return function(options: BuilderOptions)
                 for entry_name, entry in pairs(group.entries) do
                     local key = `{group_name}.{entry_name}`
 
-                    local value = get_property(entries[key]) or entry.entry.default
+                    local value = get_property(key)
 
                     entry.entry['value'] = value
                     entry.entry['selected'] = value
