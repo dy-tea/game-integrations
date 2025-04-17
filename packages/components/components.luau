@@ -14,6 +14,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+--!nocheck
+
 type GameVariant = {
     platform: string,
     edition: string
@@ -22,17 +24,17 @@ type GameVariant = {
 -- Not complete definition but enough for our job.
 type GameLaunchInfo = {
     binary: string,
-    args: {string} | nil,
-    env: table | nil
+    args: { string }?,
+    env: { [string]: string }?
 }
 
-local data_dir_path = path.persist_dir("components")
+local data_dir_path: string = path.persist_dir("components")
 
-local wine_dir_path        = path.join(data_dir_path, "wine")
-local wine_prefix_dir_path = path.join(data_dir_path, "prefix")
-local dxvk_dir_path        = path.join(data_dir_path, "dxvk")
+local wine_dir_path: string        = path.join(data_dir_path, "wine")
+local wine_prefix_dir_path: string = path.join(data_dir_path, "prefix")
+local dxvk_dir_path: string        = path.join(data_dir_path, "dxvk")
 
-local settings_file_path = path.join(data_dir_path, "settings.json")
+local settings_file_path: string = path.join(data_dir_path, "settings.json")
 
 ------------------------------------------------- Imports -------------------------------------------------
 
@@ -83,7 +85,7 @@ type Settings = {
     }
 }
 
-local function filter_wine_prefix_name(name: string | nil): string
+local function filter_wine_prefix_name(name: string?): string
     if name then
         name = name:gsub("^%s+", "")
     	name = name:gsub("%s+$", "")
@@ -94,10 +96,10 @@ local function filter_wine_prefix_name(name: string | nil): string
 	   name = "games"
 	end
 
-	return name
+	return name or "games"
 end
 
-local function get_settings_keys(): table
+local function get_settings_keys(): { [string]: { path: { string }, setter: (string?) -> string } }
     local function identity(value) return value end
 
     local keys = {
@@ -144,11 +146,11 @@ local function get_settings(game_name: string | nil): Settings
     local wine = import_wine()
     local dxvk = import_dxvk()
 
-    local function default_wine_version()
+    local function default_wine_version(): string
         return iter(iter(wine.versions.list()).first().versions).first().name
     end
 
-    local function default_dxvk_version()
+    local function default_dxvk_version(): string
         return iter(iter(dxvk.versions.list()).first().versions).first().name
     end
 
@@ -175,7 +177,7 @@ local function get_settings(game_name: string | nil): Settings
     else
         settings[game_name].wine.prefix = filter_wine_prefix_name(settings[game_name].wine.prefix)
 
-        local valid_wine_version = iter(wine.versions.list())
+        local valid_wine_version: boolean = iter(wine.versions.list())
             .map(function(group)
                 return iter(group.versions)
                     .map(function(version) return version.name end)
@@ -187,7 +189,7 @@ local function get_settings(game_name: string | nil): Settings
             settings[game_name].wine.selected = default_wine_version()
         end
 
-        local valid_dxvk_version = iter(dxvk.versions.list())
+        local valid_dxvk_version: boolean = iter(dxvk.versions.list())
             .map(function(group)
                 return iter(group.versions)
                     .map(function(version) return version.name end)
@@ -214,9 +216,9 @@ end
 ------------------------------------------------- Module -------------------------------------------------
 
 return function(game_name: string)
-    local downloader_handle = downloader.create()
+    local downloader_handle: number = downloader.create()
 
-    local function get_arch_from_platform(platform: string): string | nil
+    local function get_arch_from_platform(platform: string): "x64" | nil
         if string.gmatch(platform, "x86_64-.+") then
             return "x64"
         end
@@ -225,7 +227,7 @@ return function(game_name: string)
     end
 
     -- Return pipeline of actions needed to prepare game runner.
-    local function get_runner_diff_pipeline(variant: GameVariant)
+    local function get_runner_diff_pipeline(variant: GameVariant): any
         local curr_platform_arch = get_arch_from_platform(variant.platform) or error(`unsupported architecture: {variant.platform}`)
 
         local iter = import("iterable")
@@ -256,15 +258,14 @@ return function(game_name: string)
             error("Failed to find selected dxvk version")
         end
 
-        local wine_data_path   = path.join(wine_dir_path, settings.wine.selected)
-        local wine_prefix_path = path.join(wine_prefix_dir_path, settings.wine.prefix)
-        local dxvk_data_path   = path.join(dxvk_dir_path, settings.dxvk.selected)
+        local wine_data_path: string   = path.join(wine_dir_path, settings.wine.selected)
+        local wine_prefix_path: string = path.join(wine_prefix_dir_path, settings.wine.prefix)
 
-        local should_update_wine   = not fs.exists(path.join(wine_data_path, selected_wine.features.binary))
-        local should_update_prefix = not wine.prefix.is_valid(wine_prefix_path) or wine.prefix.get_wine_name(wine_prefix_path) ~= settings.wine.selected
-        local should_update_dxvk   = dxvk.prefix.get_info(wine_prefix_path) or { name = "", arch = "" }
+        local should_update_wine: boolean   = not fs.exists(path.join(wine_data_path, selected_wine.features.binary))
+        local should_update_prefix: boolean = not wine.prefix.is_valid(wine_prefix_path) or wine.prefix.get_wine_name(wine_prefix_path) ~= settings.wine.selected
+        local should_update_dxvk: { name: string, arch: string } = dxvk.prefix.get_info(wine_prefix_path) or { name = "", arch = "" }
 
-        should_update_dxvk = should_update_dxvk.name ~= settings.dxvk.selected or should_update_dxvk.arch ~= curr_platform_arch
+        local should_update_dxvk: boolean = should_update_dxvk.name ~= settings.dxvk.selected or should_update_dxvk.arch ~= curr_platform_arch
 
         if not should_update_wine and not should_update_prefix and not should_update_dxvk then
             return nil
@@ -288,7 +289,7 @@ return function(game_name: string)
                             output_file = wine_download_output,
                             continue_download = true,
 
-                            on_update = function(current, total)
+                            on_update = function(current: number, total: number)
                                 updater({
                                     progress = {
                                         current = current,
@@ -322,7 +323,7 @@ return function(game_name: string)
 
                         -- wine_dir_path instead of wine_data_path because we expect
                         -- every wine build archive to contain a parent folder inside.
-                        archive.extract(handle, wine_dir_path, function(current, total, diff)
+                        archive.extract(handle, wine_dir_path, function(current: number, total: number)
                             updater({
                                 progress = {
                                     current = current,
@@ -370,7 +371,7 @@ return function(game_name: string)
                             output_file = dxvk_download_output,
                             continue_download = true,
 
-                            progress = function(current, total)
+                            progress = function(current: number, total: number)
                                 updater({
                                     progress = {
                                         current = current,
@@ -404,7 +405,7 @@ return function(game_name: string)
 
                         -- dxvk_dir_path instead of dxvk_data_path because we expect
                         -- every dxvk build archive to contain a parent folder inside.
-                        archive.extract(handle, dxvk_dir_path, function(current, total, diff)
+                        archive.extract(handle, dxvk_dir_path, function(current: number, total: number)
                             updater({
                                 progress = {
                                     current = current,
@@ -444,7 +445,7 @@ return function(game_name: string)
 
     return {
         game = {
-            get_status = function(variant: GameVariant)
+            get_status = function(variant: GameVariant): string?
                 if not get_runner_diff_pipeline(variant) then
                     return nil
                 end
@@ -465,7 +466,7 @@ return function(game_name: string)
 
                 local settings = get_settings(game_name)
 
-                local wine_prefix_path = path.join(wine_prefix_dir_path, settings.wine.prefix)
+                local wine_prefix_path: string = path.join(wine_prefix_dir_path, settings.wine.prefix)
 
                 launch_info = wine.wrap_launch_command(settings.wine.selected, wine_prefix_path, launch_info)
                 launch_info = dxvk.wrap_launch_command(settings.dxvk.selected, launch_info)
@@ -475,7 +476,7 @@ return function(game_name: string)
         },
 
         settings = {
-            get_property = function(name: string)
+            get_property = function(name: string): any
                 local settings_layout = get_settings_keys()
 
                 if not settings_layout[name] then
@@ -518,7 +519,7 @@ return function(game_name: string)
                 return true
             end,
 
-            get_layout = function()
+            get_layout = function(): any
                 local iter = import("iterable")
                 local i18n = import("i18n").i18n
 

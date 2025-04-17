@@ -1,0 +1,20 @@
+{
+    "languageMode": "strict",
+    "globals": [
+        "load",
+        "import",
+        "clone",
+        "dbg",
+
+        "str",
+        "path",
+        "fs",
+        "net",
+        "downloader",
+        "archive",
+        "hash",
+        "sync",
+        "sqlite",
+        "process"
+    ]
+}

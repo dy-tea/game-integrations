@@ -1,4 +1,4 @@
-# Iterable v1.3.0
+# Iterable v1.3.1
 
 Advanced iterators syntax implementation for luau.
 
@@ -10,7 +10,11 @@ Add iterable module to your package inputs:
 {
     "standard": 1,
     "inputs": {
+<<<<<<< HEAD
         "iterable": "http://127.0.0.1:8080/packages/iterable/iterable.lua"
+=======
+        "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.luau"
+>>>>>>> rewrite
     }
 }
 ```

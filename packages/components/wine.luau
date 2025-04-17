@@ -16,29 +16,29 @@
 
 type Features = {
     binary: string,
-    env: table | nil
+    env: { [string]: string }?
 }
 
 type Output = {
     -- Exit code of the process.
-    status: number | null,
+    status: number?,
 
     -- Was the process closed normally.
     is_ok: boolean,
 
     -- Output of the process.
-    stdout: {number},
-    stderr: {number}
+    stdout: { number },
+    stderr: { number }
 }
 
 type LaunchCommand = {
     binary: string,
-    args: {string} | nil,
-    env: table | nil
+    args: { string }?,
+    env: { [string]: string }?
 }
 
-local data_dir_path = path.persist_dir("components")
-local wine_dir_path = path.join(data_dir_path, "wine")
+local data_dir_path: string = path.persist_dir("components")
+local wine_dir_path: string = path.join(data_dir_path, "wine")
 
 return function(imports)
     local wine_versions_cache = nil
@@ -65,7 +65,7 @@ return function(imports)
     end
 
     -- Try to find features of the wine version with provided name.
-    local function get_version_features(name: string): Features | nil
+    local function get_version_features(name: string): Features?
         for _, group in pairs(get_versions()) do
             for _, version in pairs(group.versions) do
                 if version.name == name then
@@ -79,7 +79,7 @@ return function(imports)
 
     -- Run wine with provided name, arguments and environment variables.
     -- Return true if command run successfully, otherwise false.
-    local function run(name: string, args: {string}, env: table | nil): Output | nil
+    local function run(name: string, args: { string }, env: { [string]: string }?): Output
         if not process then
             error("components library has no access to the v1 process API")
         end
@@ -90,15 +90,13 @@ return function(imports)
             error(`invalid wine version name: '{name}'`)
         end
 
-        local wine_path = path.join(wine_dir_path, name, features.binary)
+        local wine_path: string = path.join(wine_dir_path, name, features.binary)
 
         if not fs.exists(wine_path) then
             error(`wine version '{name}' is not installed or invalid`)
         end
 
-        if not env then
-            env = {}
-        end
+        local env: { [string]: string } = env or {}
 
         if features.env then
             for k, v in pairs(features.env) do
@@ -128,8 +126,8 @@ return function(imports)
     end
 
     -- Read name of the wine used to create prefix in the given folder.
-    local function get_prefix_wine_name(prefix: string): string | nil
-        local path = path.join(prefix, ".wine")
+    local function get_prefix_wine_name(prefix: string): string?
+        local path: string = path.join(prefix, ".wine")
 
         if not fs.exists(path) then
             return nil
@@ -155,9 +153,11 @@ return function(imports)
         local original_binary = command.binary
         local original_args = command.args or {}
 
-        command.binary = path.join(wine_dir_path, name, features.binary)
-        command.args = { original_binary }
-        command.env = command.env or {}
+        local command = {
+            binary = path.join(wine_dir_path, name, features.binary),
+            args = { original_binary },
+            env = command.env or {}
+        }
 
         for _, arg in ipairs(original_args) do
             table.insert(command.args, arg)
@@ -171,7 +171,7 @@ return function(imports)
 
         command.env["WINEPREFIX"] = prefix
 
-        return command
+        return command :: LaunchCommand
     end
 
     return {

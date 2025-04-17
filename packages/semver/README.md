@@ -1,4 +1,4 @@
-# Semver v1.0.1
+# Semver v1.0.2
 
 Semver implements support for the same-called [versions format](https://semver.org).
 
@@ -10,7 +10,11 @@ Add semver module to your package inputs:
 {
     "standard": 1,
     "inputs": {
+<<<<<<< HEAD
         "semver": "http://127.0.0.1:8080/packages/semver/semver.lua"
+=======
+        "semver": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/semver/semver.luau"
+>>>>>>> rewrite
     }
 }
 ```

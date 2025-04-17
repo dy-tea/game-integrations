@@ -1,4 +1,4 @@
--- i18n v1.0.1
+-- i18n v1.0.2
 -- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 
 local locales_cache = nil
 
-local function get_translations(name: string): table | nil
+local function get_translations(name: string): { [string]: string }?
     if not locales_cache then
         local locales = fs.read_file(import("locales"))
 
@@ -30,7 +30,7 @@ local function get_translations(name: string): table | nil
     return nil
 end
 
-return function(name: string, options: table | nil): string
+return function(name: string, options: { [string]: string }?): { [string]: string } | string
     local translations = get_translations(name)
 
     if not options or not translations then

@@ -14,6 +14,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+--!nocheck
+
 type Variant = {
     platform: string,
     edition: string
@@ -25,13 +27,13 @@ type Version = {
     url: string
 }
 
-local data_dir_path = path.persist_dir("voices_of_the_void")
+local data_dir_path: string = path.persist_dir("voices_of_the_void")
 
-local settings_file_path = path.join(data_dir_path, "settings.json")
+local settings_file_path: string = path.join(data_dir_path, "settings.json")
 
-local game_dir_path     = path.join(data_dir_path, "game")
-local game_version_path = path.join(game_dir_path, ".version")
-local game_binary_path  = path.join(game_dir_path, "VotV.exe")
+local game_dir_path: string     = path.join(data_dir_path, "game")
+local game_version_path: string = path.join(game_dir_path, ".version")
+local game_binary_path: string  = path.join(game_dir_path, "VotV.exe")
 
 ------------------------------------------------- Imports -------------------------------------------------
 
@@ -57,7 +59,7 @@ local function last_game_version(): Version
     return iter(list_game_versions()).first()
 end
 
-local function get_game_version_info(version: string): Version | nil
+local function get_game_version_info(version: string): Version?
     local iter = import("iterable")
 
     local info = iter(list_game_versions())
@@ -101,7 +103,7 @@ end
 
 ------------------------------------------------- Game -------------------------------------------------
 
-local function get_game_version(): string
+local function get_game_version(): string?
     if not fs.exists(game_version_path) then
         return nil
     end
@@ -205,7 +207,7 @@ return {
                                 output_file = archive_path,
                                 continue_download = true,
 
-                                on_update = function(current, total)
+                                on_update = function(current: number, total: number)
                                     updater({
                                         progress = {
                                             current = current,
@@ -236,7 +238,7 @@ return {
                         perform = function(updater)
                             local handle = archive.open(archive_path)
 
-                            archive.extract(handle, data_dir_path, function(current, total, diff)
+                            archive.extract(handle, data_dir_path, function(current: number, total: number)
                                 updater({
                                     progress = {
                                         current = current,
