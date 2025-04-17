@@ -1,4 +1,4 @@
-# i18n v1.0.1
+# i18n v1.0.2
 
 Centralized place for common strings localization. Recommended to be used by
 other packages to allow remote translation updates.

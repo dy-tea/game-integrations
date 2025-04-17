@@ -1,4 +1,4 @@
-# Iterable v1.3.0
+# Iterable v1.3.1
 
 Advanced iterators syntax implementation for luau.
 

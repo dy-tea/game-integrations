@@ -1,4 +1,4 @@
--- iterable v1.3.0
+-- iterable v1.3.1
 -- Copyright (C) 2024 - 2025  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -14,6 +14,8 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+--!nocheck
+
 type Item<T> = {
     key: any,
     value: T
@@ -24,9 +26,9 @@ type Iterable<T> = {
     next: () -> Item<T>?,
     first: () -> T?,
     last: () -> T?,
-    map: <F>((T) -> F) -> Iterator<F>,
-    filter: ((T) -> boolean) -> Iterator<T>,
-    for_each: ((Item<T>) -> ()) -> Iterator<T>,
+    map: <F>((T) -> F) -> Iterable<F>,
+    filter: ((T) -> boolean) -> Iterable<T>,
+    for_each: ((Item<T>) -> ()) -> Iterable<T>,
     fold: <F>(F, (F, T) -> F) -> F,
     find: ((T) -> boolean) -> Item<T>?,
     any: ((T) -> boolean) -> boolean,
@@ -43,7 +45,7 @@ type Iterable<T> = {
     collect: () -> {T}
 }
 
-local function iter<T>(table: {T}): Iterable<table>
+local function iter<T>(table: { T }): Iterable<T>
     -- local a = { 1, 2, 3 }
     -- print(iter(a).cloned().sum() == iter(a).sum())
     local function cloned(): Iterable<T>
@@ -116,7 +118,7 @@ local function iter<T>(table: {T}): Iterable<table>
     end
 
     -- print(iter({ 1, 2, 3 }).filter(function(num) return num % 2 == 1 end).count() == 2)
-    local function filter(filter: (T) -> boolean): Iterator<T>
+    local function filter(filter: (T) -> boolean): Iterable<T>
         local filtered = {}
         local item = next()
 
@@ -132,7 +134,7 @@ local function iter<T>(table: {T}): Iterable<table>
     end
 
     -- iter({ 1, 2, 3 }).for_each(function(item) print(item.value) end)
-    local function for_each(callback: (Item<T>) -> ()): Iterator<T>
+    local function for_each(callback: (Item<T>) -> ()): Iterable<T>
         local item = next()
 
         while item do
@@ -182,7 +184,7 @@ local function iter<T>(table: {T}): Iterable<table>
     --
     -- print(iter({ 1, 2 }).chain({ 3, 4, 5 }).count() == 5)
     -- print(iter({ a = 1, b = 2 }).chain({ b = 3 }).count() == 2)
-    local function chain(iterator: Iterable<T> | {T}): Iterable<T>
+    local function chain(iterator: Iterable<T> | { T }): Iterable<T>
         if not iterator.next then
             iterator = iter(iterator)
         end
@@ -374,6 +376,6 @@ local function iter<T>(table: {T}): Iterable<table>
     return iterator
 end
 
-return function<T>(table: Iterable<T> | {T}): Iterable<T>
+return function<T>(table: Iterable<T> | { T }): Iterable<T>
     return if not table.next then iter(table) else table
 end

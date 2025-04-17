@@ -14,6 +14,10 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+type Features = {
+    env: { [string]: string }?
+}
+
 type DxvkInfo = {
     name: string,
     arch: string
@@ -21,12 +25,12 @@ type DxvkInfo = {
 
 type LaunchCommand = {
     binary: string,
-    args: {string} | nil,
-    env: table | nil
+    args: { string }?,
+    env: { [string]: string }?
 }
 
-local data_dir_path = path.persist_dir("components")
-local dxvk_dir_path = path.join(data_dir_path, "dxvk")
+local data_dir_path: string = path.persist_dir("components")
+local dxvk_dir_path: string = path.join(data_dir_path, "dxvk")
 
 return function(imports)
     local dxvk_versions_cache = nil
@@ -55,7 +59,7 @@ return function(imports)
 
     -- Try to find features of the dxvk version with provided name.
     -- This function will return empty table if version exists but it has no features.
-    local function get_version_features(name: string): Features | nil
+    local function get_version_features(name: string): Features?
         for _, group in pairs(get_versions()) do
             for _, version in pairs(group.versions) do
                 if version.name == name then
@@ -69,8 +73,8 @@ return function(imports)
 
     -- Install DXVK to the given wine prefix folder.
     local function install(name: string, prefix: string, arch: "x32" | "x64")
-        local system32_dir_path  = path.join(prefix, "drive_c", "windows", "system32")
-        local dxvk_arch_dir_path = path.join(dxvk_dir_path, name, arch)
+        local system32_dir_path: string  = path.join(prefix, "drive_c", "windows", "system32")
+        local dxvk_arch_dir_path: string = path.join(dxvk_dir_path, name, arch)
 
         if not fs.exists(path.join(dxvk_arch_dir_path, "d3d11.dll")) then
             error(`can't install invalid dxvk arch '{arch}' or version name '{name}'`)
@@ -117,11 +121,13 @@ return function(imports)
         end
 
         if features.env then
-            command.env = command.env or {}
+            local env = command.env or {}
 
             for k, v in pairs(features.env) do
-                command.env[k] = v
+                env[k] = v
             end
+
+            command.env = env
         end
 
         return command

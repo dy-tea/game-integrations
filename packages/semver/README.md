@@ -1,4 +1,4 @@
-# Semver v1.0.1
+# Semver v1.0.2
 
 Semver implements support for the same-called [versions format](https://semver.org).
 
