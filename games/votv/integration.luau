@@ -29,17 +29,9 @@ type Version = {
 
 local data_dir_path: string = path.persist_dir("voices_of_the_void")
 
-local settings_file_path: string = path.join(data_dir_path, "settings.json")
-
 local game_dir_path: string     = path.join(data_dir_path, "game")
 local game_version_path: string = path.join(game_dir_path, ".version")
 local game_binary_path: string  = path.join(game_dir_path, "VotV.exe")
-
-------------------------------------------------- Imports -------------------------------------------------
-
-local function import_components()
-    return import("components").components("voices_of_the_void")
-end
 
 ------------------------------------------------- Game versions -------------------------------------------------
 
@@ -62,43 +54,64 @@ end
 local function get_game_version_info(version: string): Version?
     local iter = import("iterable")
 
-    local info = iter(list_game_versions())
+    return iter(list_game_versions())
         .find(function(info) return info.version == version end)
-
-    if info then
-        info = info.value
-    end
-
-    return info
 end
 
-------------------------------------------------- Settings -------------------------------------------------
+------------------------------------------------- Imports -------------------------------------------------
 
-type Settings = {
-    game_version: string
-}
+local __settings = nil
+local __components = nil
 
-local function get_settings()
-    if not path.exists(settings_file_path) then
-        fs.write_file(settings_file_path, "{}")
+local function import_settings(): { get_property: (key: string) -> any, set_property: (key: string, value: any) -> nothing }
+    if not __settings then
+        local iter = import("iterable")
+        local i18n = import("i18n").i18n
+
+        __settings = import("settings")({
+            game = "voices_of_the_void",
+            layout = {
+                game = {
+                    title = i18n("game"),
+                    entries = {
+                        version = {
+                            title = i18n("game_version"),
+                            entry = {
+                                format = "enum",
+
+                                values = iter(list_game_versions())
+                                    .fold({}, function(values, info)
+                                        values[info.version] = info.title
+
+                                        return values
+                                    end),
+
+                                default = last_game_version().version
+                            }
+                        }
+                    }
+                }
+            }
+        })
     end
 
-    local settings = str.decode(str.from_bytes(fs.read_file(settings_file_path)), "json")
-
-    local iter = import("iterable")
-
-    local valid_version = iter(list_game_versions())
-        .any(function(info) return info.version == settings.game_version end)
-
-    if not settings.game_version or not valid_version then
-        settings.game_version = last_game_version().version
-    end
-
-    return settings
+    return __settings
 end
 
-local function set_settings(settings: Settings)
-    fs.write_file(settings_file_path, str.encode(settings, "json"))
+local function import_components()
+    if not __components then
+        local settings = import_settings()
+
+        __components = import("components").components({
+            game = "voices_of_the_void",
+            settings = {
+                get_property = settings.get_property,
+                set_property = settings.set_property
+            }
+        })
+    end
+
+    return __components
 end
 
 ------------------------------------------------- Game -------------------------------------------------
@@ -122,9 +135,9 @@ local function is_game_installed(): boolean
         return false
     end
 
-    local settings = get_settings()
+    local settings = import_settings()
 
-    return version == settings.game_version
+    return version == settings.get_property("game.version")
 end
 
 ------------------------------------------------- Module -------------------------------------------------
@@ -145,7 +158,9 @@ return {
 
     game = {
         get_status = function(variant: Variant)
-            local status = import_components().game.get_status(variant)
+            local components = import_components()
+
+            local status = components.game.get_status(variant)
 
             if status then
                 return status
@@ -159,7 +174,10 @@ return {
         end,
 
         get_diff = function(variant: Variant)
-            local diff = import_components().game.get_diff(variant)
+            local settings = import_settings()
+            local components = import_components()
+
+            local diff = components.game.get_diff(variant)
 
             if diff then
                 return diff
@@ -169,16 +187,17 @@ return {
                 return nil
             end
 
-            local settings = get_settings()
-            local info = get_game_version_info(settings.game_version)
+            local selected_game_version = settings.get_property("game.version")
+
+            local info = get_game_version_info(selected_game_version)
 
             if not info then
-                error(`invalid game version selected: {settings.game_version}`)
+                error(`invalid game version selected: {selected_game_version}`)
             end
 
             local i18n = import("i18n").i18n
 
-            local archive_path = path.join(path.temp_dir(), `votv_{info.version}.7z`)
+            local archive_path: string = path.join(path.temp_dir(), `votv_{info.version}.7z`)
 
             return {
                 title = i18n("install_game"),
@@ -236,7 +255,7 @@ return {
                         title = i18n("extract_game_files"),
 
                         perform = function(updater)
-                            local handle = archive.open(archive_path)
+                            local handle: number = archive.open(archive_path)
 
                             archive.extract(handle, data_dir_path, function(current: number, total: number)
                                 updater({
@@ -278,7 +297,9 @@ return {
                 }
             end
 
-            return import_components().game.wrap_launch_info({
+            local components = import_components()
+
+            return components.game.wrap_launch_info({
                 status = "normal",
                 binary = game_binary_path
             })
@@ -286,64 +307,26 @@ return {
     },
 
     settings = {
-        get_property = function(name: string)
-            local value = import_components().settings.get_property(name)
+        get_property = function(name: string): any
+            local settings = import_settings()
 
-            if value then
-                return value
-            end
-
-            local settings = get_settings()
-
-            return settings[name]
+            return settings.get_property(name)
         end,
 
         set_property = function(name: string, value: any)
-            local result = import_components().settings.set_property(name, value)
+            local settings = import_settings()
 
-            if not result then
-                local settings = get_settings()
-
-                settings[name] = value
-
-                set_settings(settings)
-            end
+            settings.set_property(name, value)
         end,
 
         get_layout = function(variant: Variant)
             local iter = import("iterable")
-            local i18n = import("i18n").i18n
 
-            local settings = get_settings()
+            local settings = import_settings()
+            local components = import_components()
 
-            local layout = {
-                {
-                    title = i18n("game"),
-
-                    entries = {
-                        {
-                            name = "game_version",
-                            title = i18n("game_version"),
-
-                            entry = {
-                                format = "enum",
-
-                                values = iter(list_game_versions())
-                                    .fold({}, function(values, info)
-                                        values[info.version] = info.title
-
-                                        return values
-                                    end),
-
-                                selected = settings.game_version
-                            }
-                        }
-                    }
-                }
-            }
-
-            return iter(layout)
-                .chain(import_components().settings.get_layout())
+            return iter(settings.get_layout(variant))
+                .chain(components.settings.get_layout())
                 .collect()
         end
     }
