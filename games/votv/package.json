@@ -6,7 +6,7 @@
         ]
     },
     "inputs": {
-        "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.lua",
+        "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.luau",
         "i18n": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/i18n/package.json",
         "components": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/components/package.json"
     },

@@ -10,7 +10,7 @@ Add iterable module to your package inputs:
 {
     "standard": 1,
     "inputs": {
-        "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.lua"
+        "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.luau"
     }
 }
 ```

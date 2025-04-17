@@ -10,7 +10,7 @@ Add semver module to your package inputs:
 {
     "standard": 1,
     "inputs": {
-        "semver": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/semver/semver.lua"
+        "semver": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/semver/semver.luau"
     }
 }
 ```
