@@ -2,10 +2,6 @@
 en = "Game"
 ru = "Игра"
 
-[default_game_edition]
-en = "Default"
-ru = "Стандартная"
-
 [game_version]
 en = "Game version"
 ru = "Версия игры"
