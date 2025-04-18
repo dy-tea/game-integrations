@@ -145,17 +145,6 @@ end
 return {
     standard = 1,
 
-    editions = function(platform: string)
-        local i18n = import("i18n").i18n
-
-        return {
-            {
-                name = "default",
-                title = i18n("default_game_edition")
-            }
-        }
-    end,
-
     game = {
         get_status = function(variant: Variant)
             local components = import_components()
