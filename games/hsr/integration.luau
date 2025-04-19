@@ -1,5 +1,5 @@
 -- HSR integration v0.0.0
--- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
+-- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>, mkrsym1 <mkrsym1@gmail.com>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
