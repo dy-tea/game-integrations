@@ -5,9 +5,13 @@
             "Nikita Podvirnyi <krypt0nn@vk.com>"
         ]
     },
+    "inputs": {
+        "hyvlib": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/hyvlib/package.json",
+        "i18n": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/i18n/package.json"
+    },
     "outputs": {
         "integration": {
-            "uri": "integration.lua",
+            "uri": "integration.luau",
             "format": "module/v1"
         }
     }

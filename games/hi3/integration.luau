@@ -19,28 +19,62 @@ type Variant = {
     edition: string
 }
 
+local hyvlib = import("hyvlib").hyvlib("hi3")
+local i18n = import("i18n").i18n
+
+---------------------------------------
+-- Game install management
+
+local function game_folder(edition: string)
+    -- TODO: proper implementation
+
+    return path.join(path.persist_dir("honkai_impact_3rd"), "Honkai Impact 3rd " .. edition)
+end
+
+local function game_object(edition: string)
+    return hyvlib(edition).open_game_folder(game_folder(edition))
+end
+
+---------------------------------------
+-- Module
+
 return {
     standard = 1,
 
     editions = function(platform: string)
         return {
-            {
-                name = "global",
-                title = {
-                    en = "Global",
-                    ru = "Глобальная"
-                }
-            }
+            { name = "global", title = i18n("global_game_edition") },
+            { name = "sea",    title = i18n("sea_game_edition")    },
+            { name = "china",  title = i18n("china_game_edition")  },
+            { name = "taiwan", title = i18n("taiwan_game_edition") },
+            { name = "japan",  title = i18n("japan_game_edition")  },
+            { name = "korea",  title = i18n("korea_game_edition")  }
         }
     end,
 
     game = {
         get_status = function(variant: Variant)
+            local game = game_object(variant.edition)
+
+            if not game:is_installed() then
+                return "not-installed"
+            end
+
+            if not game:get_installed_version() then
+                error("No version file, not supported yet")
+            end
+
+            if game:is_update_required(nil) then
+                return "update-required"
+            end
+
             return "installed"
         end,
 
         get_diff = function(variant: Variant)
-            return nil
+            local game = game_object(variant.edition)
+
+            return game:make_update_diff(path.temp_dir(), nil)
         end,
 
         get_launch_info = function(variant: Variant)
