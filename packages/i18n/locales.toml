@@ -2,6 +2,36 @@
 en = "Game"
 ru = "Игра"
 
+[global_game_edition]
+en = "Global"
+ru = "Глобальная"
+zh-cn = "国际"
+
+[china_game_edition]
+en = "China"
+ru = "Китай"
+zh-cn = "中国大陆"
+
+[taiwan_game_edition]
+en = "TW/HK/MO"
+ru = "Тайвань/Гонконг/Макао"
+zh-cn = "台湾/香港/澳门"
+
+[japan_game_edition]
+en = "Japan"
+ru = "Япония"
+zh-cn = "日本"
+
+[korea_game_edition]
+en = "Korea"
+ru = "Корея"
+zh-cn = "韩国"
+
+[sea_game_edition]
+en = "Southeast Asia"
+ru = "Юго-восточная Азия"
+zh-cn = "东南亚"
+
 [game_version]
 en = "Game version"
 ru = "Версия игры"
@@ -50,6 +80,10 @@ ru = "Обновить префикс Wine"
 en = "Update DXVK version"
 ru = "Обновить версию DXVK"
 
+[begin_installation]
+en = "Begin installation"
+ru = "Начать установку"
+
 [download]
 en = "Download"
 ru = "Загрузить"
@@ -57,6 +91,10 @@ ru = "Загрузить"
 [download_game_files]
 en = "Download game files"
 ru = "Загрузить файлы игры"
+
+[download_audio]
+en = "Download audio package: {language}"
+ru = "Загрузить пакет аудио: {language}"
 
 [install]
 en = "Install"
@@ -70,6 +108,10 @@ ru = "Установить игру"
 en = "Update"
 ru = "Обновить"
 
+[update_game]
+en = "Update game"
+ru = "Обновить игру"
+
 [extract]
 en = "Extract"
 ru = "Распаковать"
@@ -78,6 +120,10 @@ ru = "Распаковать"
 en = "Extract game files"
 ru = "Распаковать файлы игры"
 
+[extract_audio]
+en = "Extract audio package: {language}"
+ru = "Распаковать пакет аудио: {language}"
+
 [delete]
 en = "Delete"
 ru = "Удалить"
@@ -85,6 +131,18 @@ ru = "Удалить"
 [delete_old_files]
 en = "Delete old files"
 ru = "Удалить старые файлы"
+
+[finish_installation]
+en = "Finish installation"
+ru = "Завершить установку"
+
+[finish_game_installation]
+en = "Finish installation of game files"
+ru = "Завершить установку файлов игры"
+
+[finish_audio_installation]
+en = "Finish installation of audio package: {language}"
+ru = "Завершить установку пакета аудио: {language}"
 
 [downloading_progress]
 en = "Downloaded {current} GB / {total} GB"

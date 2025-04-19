@@ -2,16 +2,18 @@
     "standard": 1,
     "package": {
         "maintainers": [
-            "Nikita Podvirnyi <krypt0nn@vk.com>"
+            "Nikita Podvirnyi <krypt0nn@vk.com>",
+            "mkrsym1 <mkrsym1@gmail.com>"
         ]
     },
     "inputs": {
-        "semver": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/semver/semver.lua",
-        "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.lua"
+        "semver": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/semver/semver.luau",
+        "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.luau",
+        "i18n": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/i18n/package.json"
     },
     "outputs": {
         "hyvlib": {
-            "uri": "hyvlib.lua",
+            "uri": "hyvlib.luau",
             "format": "module/v1"
         }
     }

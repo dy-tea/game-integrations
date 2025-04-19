@@ -2,12 +2,17 @@
     "standard": 1,
     "package": {
         "maintainers": [
-            "Nikita Podvirnyi <krypt0nn@vk.com>"
+            "Nikita Podvirnyi <krypt0nn@vk.com>",
+            "mkrsym1 <mkrsym1@gmail.com>"
         ]
+    },
+    "inputs": {
+        "hyvlib": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/hyvlib/package.json",
+        "i18n": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/i18n/package.json"
     },
     "outputs": {
         "integration": {
-            "uri": "integration.lua",
+            "uri": "integration.luau",
             "format": "module/v1"
         }
     }
