@@ -1,5 +1,5 @@
--- HI3rd integration v0.0.0
--- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
+-- HSR integration v0.0.0
+-- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>, mkrsym1 <mkrsym1@gmail.com>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -19,28 +19,64 @@ type Variant = {
     edition: string
 }
 
+local hyvlib = import("hyvlib").hyvlib("hsr")
+local i18n = import("i18n").i18n
+
+---------------------------------------
+-- Game install management
+
+local function game_folder(edition: string)
+    -- TODO: proper implementation
+
+    return path.join(path.persist_dir("honkai_star_rail"), "Honkai Star Rail " .. edition)
+end
+
+local function game_object(edition: string)
+    return hyvlib(edition).open_game_folder(game_folder(edition))
+end
+
+---------------------------------------
+-- Module
+
+-- FIXME: this should be in settings
+local hardcoded_audio = {
+    "en-us",
+    "zh-cn"
+}
+
 return {
     standard = 1,
 
     editions = function(platform: string)
         return {
-            {
-                name = "global",
-                title = {
-                    en = "Global",
-                    ru = "Глобальная"
-                }
-            }
+            { name = "global", title = i18n("global_game_edition") },
+            { name = "china",  title = i18n("china_game_edition")  }
         }
     end,
 
     game = {
         get_status = function(variant: Variant)
+            local game = game_object(variant.edition)
+
+            if not game:is_installed() then
+                return "not-installed"
+            end
+
+            if not game:get_installed_version() then
+                error("No version file, not supported yet")
+            end
+
+            if game:is_update_required(hardcoded_audio) then
+                return "update-required"
+            end
+
             return "installed"
         end,
 
         get_diff = function(variant: Variant)
-            return nil
+            local game = game_object(variant.edition)
+
+            return game:make_update_diff(path.temp_dir(), hardcoded_audio)
         end,
 
         get_launch_info = function(variant: Variant)
