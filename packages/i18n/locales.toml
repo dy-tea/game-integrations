@@ -108,6 +108,10 @@ ru = "Установить игру"
 en = "Update"
 ru = "Обновить"
 
+[update_game]
+en = "Update game"
+ru = "Обновить игру"
+
 [extract]
 en = "Extract"
 ru = "Распаковать"
