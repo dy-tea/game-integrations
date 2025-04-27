@@ -1,0 +1,21 @@
+{
+  "standard": 1,
+  "package": {
+    "maintainers": [
+      "Nikita Podvirnyi <krypt0nn@vk.com>"
+    ]
+  },
+  "inputs": {
+    "iterable": "http://127.0.0.1:8080/packages/iterable/iterable.luau",
+    "i18n": "http://127.0.0.1:8080/packages/i18n/package.json",
+    "settings": "http://127.0.0.1:8080/packages/settings/settings.luau",
+    "jadeite": "http://127.0.0.1:8080/packages/jadeite/jadeite.luau",
+    "components": "http://127.0.0.1:8080/packages/components/package.json"
+  },
+  "outputs": {
+    "integration": {
+      "uri": "integration.luau",
+      "format": "module/v1"
+    }
+  }
+}
