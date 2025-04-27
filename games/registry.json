@@ -24,6 +24,10 @@
         {
             "url": "http://127.0.0.1:8080/games/votv/manifest.json",
             "featured": true
+        },
+        {
+            "url": "http://127.0.0.1:8080/games/wuwa/manifest.json",
+            "featured": true
         }
     ]
 }
