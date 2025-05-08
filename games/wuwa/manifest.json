@@ -3,8 +3,8 @@
   "game": {
     "title": "Wuthering Waves [local]",
     "description": {
-      "en": "WIP implementation used for testing",
-      "ru": "Реализация пакета, используемая для тестов"
+      "en": "Wuthering Waves is a story-rich open-world action RPG with a high degree of freedom. You wake from your slumber as Rover, joined by a vibrant cast of Resonators on a journey to reclaim your lost memories and surmount the Lament.",
+      "ru": "Wuthering Waves — это сюжетная ролевая игра с открытым миром и высокой степенью свободы. Вы просыпаетесь ото сна в роли марсохода, к которому присоединяется яркий состав резонаторов в путешествии, чтобы вернуть свои утраченные воспоминания и преодолеть Плач."
     },
     "developer": "KURO GAMES",
     "publisher": "KURO GAMES",

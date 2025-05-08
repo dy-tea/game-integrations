@@ -1,5 +1,5 @@
 -- wuthering_waves integration v0.0.0
--- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>, Dylan Donnell <dylan.donnell@student.griffith.ie>
+-- Copyright (C) 2025  Dylan Donnell <dylan.donnell@student.griffith.ie>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -33,19 +33,19 @@ local jadeite = import("jadeite")
 
 local data_dir_path: string = path.persist_dir("wuthering_waves")
 
--- Helper functions to get game data URLs
+-- game index URL
 local function game_index(edition: string)
     if edition == "china" then
-        return "https://prod-alicdn-gamestarter.kurogame.com/pcstarter/prod/game/G153/50009_ZXniDENS4vnMhNEhl7cLOQMojTLKLGgu/index.json"
+        return "https://prod-alicdn-gamestarter.kurogame.com/launcher/game/G153/50009_ZXniDENS4vnMhNEhl7cLOQMojTLKLGgu/index.json"
     end
-    return "https://prod-alicdn-gamestarter.kurogame.com/pcstarter/prod/game/G153/50004_obOHXFrFanqsaIEOmuKroCcbZkQRBC7c/index.json"
+    return "https://prod-alicdn-gamestarter.kurogame.com/launcher/game/G153/50004_obOHXFrFanqsaIEOmuKroCcbZkQRBC7c/index.json"
 end
 
 local function game_exe_path(edition: string)
     return path.join(data_dir_path, edition, "Client", "Binaries", "Win64", "Client-Win64-Shipping.exe")
 end
 
--- Get installed version
+-- read version from .version file of given edition
 local function get_installed_version(edition: string): string?
     local version_file_path: string = path.join(data_dir_path, edition, ".version")
 
@@ -56,62 +56,60 @@ local function get_installed_version(edition: string): string?
     return str.from_bytes(fs.read_file(version_file_path))
 end
 
--- Set installed version
+-- write version to .version file of given edition
 local function set_installed_version(edition: string, version: string)
     local version_file_path: string = path.join(data_dir_path, edition, ".version")
     fs.create_dir(data_dir_path)
     fs.write_file(version_file_path, str.to_bytes(version))
 end
 
--- Get resource information from index
+-- get resource information from index
 local function get_resource_info(edition: string)
-    local temp_dir = path.temp_dir()
-    local index_file = path.join(temp_dir, "wuthering_waves_index.json")
+    local resp = net.fetch(game_index(edition))
 
-    -- Download index.json
-    local downloader_handle = downloader.create()
-    local task_handle = downloader.download(downloader_handle, {
-        url = game_index(edition),
-        output_file = index_file
-    })
+    if resp.is_ok then
+        -- parse index.json from response
+        local body = str.decode(str.from_bytes(resp.body), "json")
 
-    downloader.wait(task_handle)
-    downloader.close(downloader_handle)
+        local current_version = body.default.config.version
+        if not current_version then
+            error(`current version not found`)
+        end
 
-    -- Parse index.json
-    local index_content = fs.read_file(index_file)
-    local index_data = str.decode(str.from_bytes(index_content), "json")
+        local cdn_url = nil
+        if #body.default.cdnList > 0 then
+            cdn_url = body.default.cdnList[1].url
+        else
+            error(`cdn url not found`)
+        end
 
-    local current_version = index_data.default.version
-    local resources_url = nil
-    local cdn_url = nil
+        -- get resources URL
+        local index_file = nil
+        if body.default.config.indexFile then
+            index_file = cdn_url .. body.default.config.indexFile
+        else
+            error(`resources url not found`)
+        end
 
-    -- Get the first CDN URL
-    if #index_data.default.cdnList > 0 then
-        cdn_url = index_data.default.cdnList[1].url
+        -- get resources base path
+        local base_url = nil
+        if body.default.config.baseUrl then
+            base_url = cdn_url .. body.default.config.baseUrl
+        else
+            error(`resources base path not found`)
+        end
+
+        return {
+            version = current_version,
+            index_file = index_file,
+            base_url = base_url
+        }
     end
 
-    -- Get resources URL
-    if index_data.default.resources then
-        resources_url = cdn_url .. index_data.default.resources
-    end
-
-    -- Get resources base path
-    local resources_base_path = nil
-    if index_data.default.resourcesBasePath then
-        resources_base_path = cdn_url .. index_data.default.resourcesBasePath
-    end
-
-    fs.remove(index_file)
-
-    return {
-        version = current_version,
-        resources_url = resources_url,
-        resources_base_path = resources_base_path
-    }
+    return nil
 end
 
--- Check if the game is installed
+-- assume game is installed if game exe path and version file exists
 local function is_game_installed(edition: string): boolean
     local installed_version = get_installed_version(edition)
 
@@ -122,36 +120,42 @@ local function is_game_installed(edition: string): boolean
     return fs.exists(game_exe_path(edition))
 end
 
--- FIXME current total size is broken
 local function parallel_download(files, base_url, output_dir, max_parallel, progress_callback)
-    -- Calculate total download size
+    -- calculate total download size
     local total_size = iter(files).cloned().fold(0, function(acc, f)
         return acc + f.size
     end)
 
-    -- Track downloaded bytes across all files
+    -- store downloaded bytes of each file in table
     local download_progress = {}
     for i = 1, #files do
         download_progress[i] = 0
     end
 
-    -- Create shared downloader
+    -- create shared downloader
     local downloader_handle = downloader.create()
 
-    -- Process files in chunks of max_parallel
+    -- process files in chunks of max_parallel
     local i = 1
     while i <= #files do
         local active_tasks = {}
 
-        -- Start up to max_parallel downloads
+        -- start up to max_parallel downloads
         for j = i, math.min(i + max_parallel - 1, #files) do
             local file = files[j]
             local dest_path = path.join(output_dir, file.dest)
 
-            -- Calculate file URL
-            local file_url = base_url .. file.dest
+            -- skip file if exists
+            if fs.exists(dest_path) then
+                download_progress[j] = file.size
+                progress_callback(iter(download_progress).cloned().sum(), total_size)
+                continue
+            end
 
-            -- Download the file
+            -- calculate file URL
+            local file_url = base_url .. string.gsub(file.dest, " ", "%%20")
+
+            -- download the file, callback with sum of downloaded file sizes
             local task_handle = downloader.download(downloader_handle, {
                 url = file_url,
                 output_file = dest_path,
@@ -171,19 +175,55 @@ local function parallel_download(files, base_url, output_dir, max_parallel, prog
             active_tasks[j] = task_handle
         end
 
-        -- Wait for all active downloads to complete
+        -- wait for all active downloads to complete
         for j = i, math.min(i + max_parallel - 1, #files) do
-            downloader.wait(active_tasks[j])
+            if active_tasks[j] then
+                downloader.wait(active_tasks[j])
+            end
         end
 
-        -- Move to the next chunk of files
+        -- move to the next chunk of files
         i = i + max_parallel
     end
 
     downloader.close(downloader_handle)
 end
 
--- Settings management
+-- test each file against its hash, return a list of non-matching hashes
+local function test_hash(files, base_dir, progress_callback)
+    local results = {}
+    local total_size = iter(files).cloned().fold(0, function(acc, f)
+        return acc + f.size
+    end)
+    local current_size = 0
+
+    for _, file in ipairs(files) do
+        local dest_path = path.join(base_dir, file.dest)
+
+        -- remove existing file if it doesn't match the hash
+        if fs.exists(dest_path) then
+            dbg(`Hashing file {dest_path}`)
+            local result = hash.file(dest_path, "md5")
+
+            current_size += file.size
+            progress_callback(current_size, total_size)
+
+
+            -- format result to lowercase md5
+            local hashed = iter(result).fold("", function(acc, word) return acc .. string.format("%02x", word) end)
+            hashed = string.lower(hashed)
+
+            -- remove file if non-matching
+            if hashed ~= file.md5 then
+                table.insert(result, file.dest)
+            end
+        end
+    end
+
+    return results
+end
+
+-- settings management
 local __settings = nil
 local __components = nil
 
@@ -198,6 +238,14 @@ local function import_settings()
                         dx11 = {
                             title = "Use DX11",
                             description = "Run game with DirectX 11 instead of DirectX 12",
+                            entry = {
+                                format = "switch",
+                                default = true
+                            }
+                        },
+                        wayland = {
+                            title = "Use wine wayland",
+                            description = "Unset DISPLAY so wine wayland is used by default",
                             entry = {
                                 format = "switch",
                                 default = false
@@ -264,12 +312,9 @@ return {
                 return "not-installed"
             end
 
-            -- Check if there's a newer version available
+            -- check if there's a newer version available
             local resource_info = get_resource_info(variant.edition)
             local installed_version = get_installed_version(variant.edition)
-
-            dbg(resource_info)
-            dbg(installed_version)
 
             if installed_version and resource_info.version and installed_version ~= resource_info.version then
                 return "update-required"
@@ -286,28 +331,17 @@ return {
                 return diff
             end
 
-            -- Check if there's an update
+            -- check if there's an update
             local resource_info = get_resource_info(variant.edition)
             local installed_version = get_installed_version(variant.edition)
 
-            local temp_dir = path.temp_dir()
-            local resource_json_path = path.join(temp_dir, "wuthering_waves_resource.json")
-
-            -- Download resource.json
-            local downloader_handle = downloader.create()
-            local task_handle = downloader.download(downloader_handle, {
-                url = resource_info.resources_url,
-                output_file = resource_json_path,
-            })
-
-            downloader.wait(task_handle)
-            downloader.close(downloader_handle)
-
-            -- Parse resource.json
-            local resource_content = fs.read_file(resource_json_path)
-            local resource_data = str.decode(str.from_bytes(resource_content), "json")
-
-            fs.remove(resource_json_path)
+            -- get indexFile.json
+            local index_file_resp = net.fetch(resource_info.index_file)
+            if not index_file_resp.is_ok then
+                error(`could not fetch indexFile.json`)
+                return
+            end
+            local index_file_data = str.decode(str.from_bytes(index_file_resp.body), "json")
 
             local output_dir = path.join(data_dir_path, variant.edition)
 
@@ -325,58 +359,9 @@ return {
                         }),
                         pipeline = {
                             {
-                                title = "Calculating diff",
+                                title = "Cleaning outdated files",
                                 perform = function(updater)
-                                    local total_size = iter(resource_data.resource).cloned().fold(0, function(acc, f)
-                                        return acc + f.size
-                                    end)
-                                    local current_size = 0
-
-                                    for _, file in ipairs(resource_data.resource) do
-                                        local dest_path = path.join(output_dir, file.dest)
-
-                                        -- Remove existing file if it doesn't match the hash
-                                        if fs.exists(dest_path) then
-                                            local file_handle = fs.open(dest_path)
-
-                                            dbg(`hashing {dest_path}`)
-
-                                            local hasher = hash.builder("md5")
-
-                                            local chunk = fs.read(file_handle)
-                                            while #chunk > 0 do
-                                                hash.write(hasher, chunk)
-                                                current_size += #chunk
-
-                                                updater({
-                                                    title = "Calculating file hash",
-                                                    progress = {
-                                                        current = current_size,
-                                                        total = total_size,
-                                                        format = function()
-                                                            local current_gb = math.floor((current_size / 1000 / 1000 / 1000) * 10) / 10
-                                                            local total_gb = math.floor((total_size / 1000 / 1000 / 1000) * 10) / 10
-                                                            local percentage = math.floor((current_size / total_size) * 100)
-
-                                                            return "Processed " .. current_gb .. " GB of " .. total_gb .. " GB - " .. percentage .. "%"
-                                                        end
-                                                    }
-                                                })
-
-                                                chunk = fs.read(file_handle)
-                                            end
-
-                                            if hash.finalize(hasher) ~= file.hash then
-                                                dbg(`hash mismatch, removing file`)
-                                                fs.remove(dest_path)
-                                            end
-
-                                            fs.close(file_handle)
-                                        else
-                                            -- File already exists, skip it
-                                            current_size += file.size
-                                        end
-                                    end
+                                    fs.remove(output_dir)
                                 end
                             },
                             {
@@ -384,8 +369,8 @@ return {
                                 perform = function(updater)
                                     -- start parallel download
                                     parallel_download(
-                                        resource_data.resource,
-                                        resource_info.resources_base_path,
+                                        index_file_data.resource,
+                                        resource_info.base_url,
                                         output_dir,
                                         concurrent_downloads,
                                         function(current, total)
@@ -411,8 +396,71 @@ return {
                                         end
                                     )
 
-                                    -- Update version
+                                    -- save version
                                     set_installed_version(variant.edition, resource_info.version)
+                                end
+                            },
+                            {
+                                title = "Verifying files",
+                                perform = function(updater)
+                                    while true do
+                                        -- get hash result
+                                        local hash_result = test_hash(index_file_data.resource, output_dir, function(current_size, total_size)
+                                            updater({
+                                                title = "Calculating file hash",
+                                                progress = {
+                                                current = current_size,
+                                                total = total_size,
+                                                format = function()
+                                                    local current_gb = math.floor((current_size / 1000 / 1000 / 1000) * 10) / 10
+                                                    local total_gb = math.floor((total_size / 1000 / 1000 / 1000) * 10) / 10
+                                                    local percentage = math.floor((current_size / total_size) * 100)
+
+                                                    return "Processed " .. current_gb .. " GB of " .. total_gb .. " GB - " .. percentage .. "%"
+                                                end
+                                            }
+                                        })
+                                        end)
+
+                                        -- no corrupted files
+                                        if #hash_result == 0 then
+                                            break
+                                        end
+
+                                        -- remove corrupted files
+                                        for _, file in hash_result do
+                                            fs.remove(path.join(output_dir, file))
+                                        end
+
+                                        -- redownload corrupted files
+                                        parallel_download(
+                                            hash_result,
+                                            resource_info.base_url,
+                                            output_dir,
+                                            concurrent_downloads,
+                                            function(current, total)
+                                                updater({
+                                                    title = i18n("downloading_game_files"),
+                                                    progress = {
+                                                        current = current,
+                                                        total = total,
+                                                        format = function()
+                                                            -- convert to gb for display
+                                                            local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
+                                                            local total_gb = math.floor((total / 1000 / 1000 / 1000) * 10) / 10
+                                                            local percentage = math.floor((current / total) * 100)
+
+                                                            return i18n("downloading_progress", {
+                                                                current = current_gb,
+                                                                total = total_gb,
+                                                                percentage = percentage
+                                                            })
+                                                        end
+                                                    }
+                                                })
+                                            end
+                                        )
+                                    end
                                 end
                             }
                         }
@@ -422,7 +470,7 @@ return {
                 return nil
             end
 
-            -- Fresh installation
+            -- fresh installation
             return {
                 title = i18n("install_game"),
                 description = i18n("install_game_description", {
@@ -436,8 +484,8 @@ return {
                         perform = function(updater)
                             -- start parallel download
                             parallel_download(
-                                resource_data.resource,
-                                resource_info.resources_base_path,
+                                index_file_data.resource,
+                                resource_info.base_url,
                                 output_dir,
                                 concurrent_downloads,
                                 function(current, total)
@@ -463,7 +511,7 @@ return {
                                 end
                             )
 
-                            -- Save version
+                            -- save version
                             set_installed_version(variant.edition, resource_info.version)
                         end
                     }
@@ -480,6 +528,7 @@ return {
                 }
             end
 
+            -- add -dx11 arg if specified in settings
             local args = {}
             local settings = import_settings()
             local use_dx11 = settings.get_property("game.dx11")
@@ -488,12 +537,21 @@ return {
                 table.insert(args, "-dx11")
             end
 
-            local components = import_components()
+            -- add empty DISPLAY envvar if specified in settings
+            local env = { WINEDLLOVERRIDES = "KRSDKExternal.exe=d" }
+            local use_wayland = settings.get_property("game.wayland")
 
+            if use_wayland then
+                env["DISPLAY"] = ""
+            end
+
+            -- run game
+            local components = import_components()
             return components.game.wrap_launch_info(jadeite.wrap_launch_command({
                 status = "normal",
                 binary = game_exe_path(variant.edition),
-                args = args
+                args = args,
+                env = env
             }))
         end
     },
