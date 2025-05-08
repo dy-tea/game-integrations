@@ -2,15 +2,15 @@
   "standard": 1,
   "package": {
     "maintainers": [
-      "Nikita Podvirnyi <krypt0nn@vk.com>"
+      "Dylan Donnell <dylan.donnell@student.griffith.ie>"
     ]
   },
   "inputs": {
-    "iterable": "http://127.0.0.1:8080/packages/iterable/iterable.luau",
-    "i18n": "http://127.0.0.1:8080/packages/i18n/package.json",
-    "settings": "http://127.0.0.1:8080/packages/settings/settings.luau",
-    "jadeite": "http://127.0.0.1:8080/packages/jadeite/jadeite.luau",
-    "components": "http://127.0.0.1:8080/packages/components/package.json"
+    "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.luau",
+    "i18n": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/i18n/package.json",
+    "settings": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/settings/settings.luau",
+    "jadeite": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/jadeite/jadeite.luau",
+    "components": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/components/package.json"
   },
   "outputs": {
     "integration": {

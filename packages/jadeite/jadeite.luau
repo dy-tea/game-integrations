@@ -1,5 +1,5 @@
 -- jadeite v0.0.0
--- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>, Dylan Donnell <dylan.donnell@student.griffith.ie>
+-- Copyright (C) 2025  Dylan Donnell <dylan.donnell@student.griffith.ie>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -14,52 +14,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-local URL = "https://codeberg.org/mkrsym1/jadeite/releases/download/"
-
--- list of versions
-local VERSIONS = {
-    "v5.0.1",
-    "v5.0.0",
-    "v4.1.0",
-    "v4.0.0",
-    "v3.2.0",
-    "v3.1.3",
-    "v3.1.2",
-    "v3.1.1",
-    "v3.1.0",
-    "v3.1.0",
-    "v3.0.12",
-    "v3.0.11",
-    "v3.0.10",
-    "v3.0.9",
-    "v3.0.8",
-    "v3.0.7",
-    "v3.0.6",
-    "v3.0.5",
-    "v3.0.4",
-    "v3.0.3",
-    "v3.0.2",
-    "v3.0.1",
-    "v3.0.0",
-    "v2.0.1",
-    "v2.0.0",
-    "v1.1.13",
-    "v1.1.12",
-    "v1.1.11",
-    "v1.1.10",
-    "v1.1.9",
-    "v1.1.8",
-    "v1.1.7",
-    "v1.1.6",
-    "v1.1.5",
-    "v1.1.4",
-    "v1.1.3",
-    "v1.1.2",
-    "v1.1.1",
-    "v1.1.0",
-    "v1.0.1",
-    "v1.0.0",
-}
+local URL = "https://codeberg.org/mkrsym1/jadeite/releases/"
 
 type LaunchCommand = {
     binary: string,
@@ -71,12 +26,24 @@ local data_dir_path: string = path.persist_dir("jadeite")
 
 -- get the latest version
 local function latest_version()
-    return VERSIONS[1]
+    local resp = net.fetch(URL .. "latest")
+
+    if resp.is_ok then
+        local body = str.from_bytes(resp.body)
+        local match = body:match('"tag/(.-)"')
+        if match then
+            dbg(`jadeite - latest version: {match}`)
+            return match
+        end
+    end
+
+    error(`jadeite - no latest version found`)
+    return ""
 end
 
 -- construct archive url for version
 local function archive_url(version: string)
-    return URL .. version .. "/" .. version .. ".zip"
+    return URL .. "download/" .. version .. "/" .. version .. ".zip"
 end
 
 -- download and extract specified version
@@ -119,18 +86,20 @@ return {
         local ver = version or latest_version()
         init(ver)
 
-        local original_binary = command.binary
-        local original_args = command.args or {}
+        -- args will be args to jadeite
+        -- game path, launcher path, game args
+        local args = { command.binary, "--" }
+        if command.args then
+            for _, arg in ipairs(command.args) do
+                table.insert(args, arg)
+            end
+        end
 
         local cmd = {
             binary = executable(ver),
-            args = { original_binary },
+            args = args,
             env = command.env or {}
         }
-
-        for _, arg in ipairs(original_args) do
-            table.insert(cmd.args, arg)
-        end
 
         return cmd :: LaunchCommand
     end
