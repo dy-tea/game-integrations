@@ -538,7 +538,8 @@ return {
             end
 
             -- add empty DISPLAY envvar if specified in settings
-            local env = { WINEDLLOVERRIDES = "KRSDKExternal.exe=d" }
+            -- first overrides are for dxvk, second is to disable popup window
+            local env = { WINEDLLOVERRIDES = "d3d8,d3d9,d3d10core,d3d11,dxgi=n;KRSDKExternal.exe=d" }
             local use_wayland = settings.get_property("game.wayland")
 
             if use_wayland then
