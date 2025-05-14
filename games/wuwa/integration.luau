@@ -32,6 +32,7 @@ local iter = import("iterable")
 local jadeite = import("jadeite")
 
 local data_dir_path: string = path.persist_dir("wuthering_waves")
+local engine_configs_path = path.join(data_dir_path, "engine_configs")
 
 -- game index URL
 local function game_index(edition: string)
@@ -189,6 +190,74 @@ local function parallel_download(files, base_url, output_dir, max_parallel, prog
     downloader.close(downloader_handle)
 end
 
+-- get configs from https://github.com/AlteriaX/WuWa-Configs, return version installed
+local function get_engine_config()
+    local latest_version_file = path.join(engine_configs_path, ".latest")
+
+    -- fetch tags
+    local headers = {}
+    headers["User-Agent"] = "curl/8.13.0"
+    headers["Accept"] = "*/*"
+    local tags_resp = net.fetch("https://api.github.com/repos/AlteriaX/WuWa-Configs/tags", { method = "get", headers = headers , body = {}})
+    if tags_resp.is_ok then
+        -- decode json
+        local tags_json = str.decode(str.from_bytes(tags_resp.body), "json")
+        local latest = tags_json[1]
+        local name = latest["name"]
+
+        -- if target path exists, no need to redownload
+        if fs.exists(path.join(engine_configs_path, "WuWa-Configs-" .. name:gsub("v", ""))) then
+            return name
+        end
+
+        local output_file = path.join(path.temp_dir(), `engine_configs_{name}.zip`)
+
+        -- download archive
+        local handle = downloader.create()
+        local task = downloader.download(handle, {
+            url = `https://github.com/AlteriaX/WuWa-Configs/archive/refs/tags/{name}.zip`,
+            output_file = output_file,
+            on_finish = function(total)
+                dbg(`downloaded {total} B`)
+            end
+        })
+        downloader.wait(task)
+        downloader.close(handle)
+
+        -- extract archive
+        local arch = archive.open(output_file, "zip")
+        archive.extract(arch, engine_configs_path)
+        archive.close(arch)
+
+        -- remove archive
+        fs.remove(output_file)
+
+        -- write latest version file
+        fs.write_file(latest_version_file, name)
+
+        return name
+    else
+        -- github isn't accessible, return the last downloaded version
+        if fs.exists(latest_version_file) then
+            return fs.read_file(latest_version_file)
+        end
+    end
+
+    error(`no response from github api`)
+    return ""
+end
+
+-- overwite the Engine.ini file with the specified config number of a given version
+local function apply_engine_config(edition, version, num)
+    local engine_ini_src_path = path.join(engine_configs_path, "WuWa-Configs-" .. version:gsub("v", ""), "Config " .. num, "Engine.ini")
+    local engine_ini_dest_path = path.join(data_dir_path, edition, "Client", "Saved", "Config", "WindowsNoEditor", "Engine.ini")
+
+    if fs.exists(engine_ini_src_path) then
+        fs.remove(engine_ini_dest_path)
+        fs.copy(engine_ini_src_path, engine_ini_dest_path)
+    end
+end
+
 -- test each file against its hash, return a list of non-matching hashes
 local function test_hash(files, base_dir, progress_callback)
     local results = {}
@@ -241,6 +310,30 @@ local function import_settings()
                             entry = {
                                 format = "switch",
                                 default = true
+                            }
+                        },
+                        skip_splash = {
+                            title = "Skip splash",
+                            description = "Skip intro videos",
+                            entry = {
+                                format = "switch",
+                                default = false
+                            }
+                        },
+                        engine_config = {
+                            title = "Alternate engine config",
+                            description = "Replace Engine.ini with config from AlteriaX/WuWa-Configs",
+                            entry = {
+                                format = "enum",
+                                default = "none",
+                                values = {
+                                    none = "None",
+                                    c1 = "Config 1",
+                                    c2 = "Config 2",
+                                    c3 = "Config 3",
+                                    c4 = "Config 4",
+                                    c5 = "Config 5"
+                                }
                             }
                         },
                         wayland = {
@@ -528,13 +621,30 @@ return {
                 }
             end
 
-            -- add -dx11 arg if specified in settings
-            local args = {}
             local settings = import_settings()
+
+            -- overwrite engine config if specified
+            local use_engine_config = settings.get_property("game.engine_config")
+            if use_engine_config ~= "none" then
+                local engine_config = get_engine_config()
+                apply_engine_config(variant.edition, engine_config, use_engine_config:gsub("c", ""))
+            end
+
+            -- add -dx11 or -dx12 arg if specified in settings
+            local args = {}
             local use_dx11 = settings.get_property("game.dx11")
 
             if use_dx11 then
                 table.insert(args, "-dx11")
+            else
+                table.insert(args, "-dx12")
+            end
+
+            -- add -SkipSplash if specified in settings
+            local skip_splash = settings.get_property("game.skip_splash")
+
+            if skip_splash then
+                table.insert(args, "-SkipSplash")
             end
 
             -- add empty DISPLAY envvar if specified in settings
