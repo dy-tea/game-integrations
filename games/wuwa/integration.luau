@@ -195,10 +195,14 @@ local function get_engine_config()
     local latest_version_file = path.join(engine_configs_path, ".latest")
 
     -- fetch tags
-    local headers = {}
-    headers["User-Agent"] = "curl/8.13.0"
-    headers["Accept"] = "*/*"
-    local tags_resp = net.fetch("https://api.github.com/repos/AlteriaX/WuWa-Configs/tags", { method = "get", headers = headers , body = {}})
+    local tags_resp = net.fetch("https://api.github.com/repos/AlteriaX/WuWa-Configs/tags", {
+        method = "get",
+        headers = {
+            ["User-Agent"] = "curl/8.13.0",
+            ["Accept"] = "*/*"
+        },
+        body = {}
+    })
     if tags_resp.is_ok then
         -- decode json
         local tags_json = str.decode(str.from_bytes(tags_resp.body), "json")
@@ -216,10 +220,7 @@ local function get_engine_config()
         local handle = downloader.create()
         local task = downloader.download(handle, {
             url = `https://github.com/AlteriaX/WuWa-Configs/archive/refs/tags/{name}.zip`,
-            output_file = output_file,
-            on_finish = function(total)
-                dbg(`downloaded {total} B`)
-            end
+            output_file = output_file
         })
         downloader.wait(task)
         downloader.close(handle)
