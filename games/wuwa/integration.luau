@@ -255,8 +255,13 @@ local function apply_engine_config(edition, version, num)
 
     if fs.exists(engine_ini_src_path) then
         fs.remove(engine_ini_dest_path)
-        fs.copy(engine_ini_src_path, engine_ini_dest_path)
     end
+
+    if not fs.exists(engine_ini_dest_path) then
+        fs.create_dir(path.join(data_dir_path, edition, "Client", "Saved", "Config", "WindowsNoEditor"))
+    end
+
+    fs.copy(engine_ini_src_path, engine_ini_dest_path)
 end
 
 -- test each file against its hash, return a list of non-matching hashes
