@@ -290,7 +290,7 @@ local function test_hash(files, base_dir, progress_callback)
 
             -- remove file if non-matching
             if hashed ~= file.md5 then
-                table.insert(result, file.dest)
+                table.insert(results, file.dest)
             end
         end
     end
