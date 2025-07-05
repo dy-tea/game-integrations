@@ -92,13 +92,25 @@ return {
     patch_file = function(diff_file: string, old_path: string, new_path: string?)
         if not fs.exists(exe_path) then
             init()
-            process.exec("chmod", {"+x", exe_path})
+            local output = process.exec("chmod", {"+x", exe_path})
+            if not output.is_ok then
+                local stdout = str.from_bytes(output.stdout)
+                local stderr = str.from_bytes(output.stderr)
+                error(`exited with status code {output.status}    stdout: {stdout}    stderr: {stderr}`)
+            end
         end
 
+        local output = nil
         if new_path then
-            process.exec("bash", {"-c", `exec {exe_path} {diff_file} {old_path} {new_path}`})
+            output = process.exec("bash", {"-c", `exec {exe_path} {diff_file} {old_path} {new_path}`})
         else
-            process.exec("bash", {"-c", `exec {exe_path} -i {diff_file} {old_path}`})
+            output = process.exec("bash", {"-c", `exec {exe_path} -i {diff_file} {old_path}`})
+        end
+
+        if not output.is_ok then
+            local stdout = str.from_bytes(output.stdout)
+            local stderr = str.from_bytes(output.stderr)
+            error(`exited with status code {output.status}    stdout: {stdout}    stderr: {stderr}`)
         end
     end
 }

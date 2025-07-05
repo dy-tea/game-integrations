@@ -237,162 +237,6 @@ local function get_patch_config(resource_info, from_version: string)
     return nil
 end
 
--- download and patch files in paralell
-local function patch_files(resource_file_list, resource_info, patch_config, output_dir, max_parallel, progress_callback)
-    -- calculate total download size
-    local total_size = iter(resource_file_list).cloned().fold(0, function(acc, f)
-        return acc + f.size
-    end)
-
-    -- store downloaded bytes of each file in table
-    local download_progress = {}
-    for i = 1, #resource_file_list do
-        download_progress[i] = 0
-    end
-
-    -- create patchfile dir to store patch files
-    local patchfile_dir = path.join(output_dir, "downloading")
-    if not fs.exists(patchfile_dir) then
-        fs.create_dir(patchfile_dir)
-    end
-
-    -- download files in parallel, patch while downloading others
-    local downloader_handle = downloader.create()
-    local active_tasks = {}
-    local completed_count = 0
-    local file_index = 1
-
-    local function start_download_patch(idx)
-        local file = resource_file_list[idx]
-        local from_folder = file.fromFolder
-
-        local patchfile_dest = path.join(patchfile_dir, `{idx}.patch`)
-        local dest_path = path.join(output_dir, file.dest)
-
-        -- handle downloaded entire files
-        if fs.exists(dest_path) then
-            -- get hash of file
-            local result = hash.file(dest_path, "md5")
-            local hashed = iter(result).fold("", function(acc, word)
-                return acc .. string.format("%02x", word)
-            end)
-            hashed = string.lower(hashed)
-
-            if hashed == file.md5 then
-                -- matching hash means we should skip the file
-                download_progress[idx] = file.size
-                progress_callback(iter(download_progress).cloned().sum(), total_size)
-                completed_count += 1
-
-                print(`finished patching "{file.dest}"`)
-                return
-            else
-                -- mismatched hash means we should remove the file
-                fs.remove(dest_path)
-            end
-        end
-
-        -- handle downloaded patch files
-        if fs.exists(patchfile_dest .. ".completed") then
-            download_progress[idx] = file.size
-            progress_callback(iter(download_progress).cloned().sum(), total_size)
-            completed_count += 1
-
-            print(`finished patching "{file.dest}"`)
-            return
-        end
-
-        local file_url = nil
-        if from_folder then
-            file_url = resource_info.cdn_url .. from_folder .. string.gsub(file.dest, " ", "%%20")
-        else
-            file_url = resource_info.cdn_url .. patch_config.baseUrl .. string.gsub(file.dest, " ", "%%20")
-        end
-
-        local handle_finish = function(_)
-            print(`finished downloading "{file.dest}"`)
-
-            -- overwite files
-            if from_folder then
-                if fs.exists(dest_path) then
-                    fs.remove(dest_path)
-                end
-                fs.move(patchfile_dest, dest_path)
-            else
-                -- patch file
-                dpatchz.patch_file(patchfile_dest, output_dir)
-
-                -- remove patch file
-                if fs.exists(patchfile_dest) then
-                    fs.remove(patchfile_dest)
-                end
-
-                -- created completed file
-                fs.create_file(patchfile_dest .. ".completed")
-            end
-
-            -- callback
-            download_progress[idx] = file.size
-            progress_callback(iter(download_progress).cloned().sum(), total_size)
-
-            print(`finished patching "{file.dest}"`)
-        end
-
-        if fs.exists(patchfile_dest) then
-            handle_finish(nil)
-        else
-            local handle = downloader.download(downloader_handle, {
-                url = file_url,
-                output_file = patchfile_dest,
-                continue_download = true,
-                on_update = function(current, _)
-                    download_progress[idx] = current
-                    progress_callback(iter(download_progress).cloned().sum(), total_size)
-                end,
-                on_finish = handle_finish
-            })
-
-            active_tasks[idx] = handle
-        end
-    end
-
-    -- start inital batch
-    while file_index <= #resource_file_list and #active_tasks < max_parallel do
-        start_download_patch(file_index)
-        file_index += 1
-    end
-
-    -- maintain max_parallel tasks
-    while completed_count < #resource_file_list do
-        -- check for completions
-        local completed_files = {}
-        for idx, task_handle in pairs(active_tasks) do
-            local progress = downloader.progress(task_handle)
-            if progress.finished then
-                table.insert(completed_files, idx)
-                completed_count += 1
-            end
-        end
-
-        -- remove completed downloads from active_tasks
-        for _, idx in ipairs(completed_files) do
-            downloader.wait(active_tasks[idx])
-            active_tasks[idx] = nil
-        end
-
-        -- start new downloads to fill up to max_parallel
-        while file_index <= #resource_file_list and #active_tasks < max_parallel do
-            start_download_patch(file_index)
-            file_index += 1
-        end
-
-        -- should probably sleep here but there is not a sane way to do it in lua
-    end
-
-    downloader.close(downloader_handle)
-    fs.remove_dir(patchfile_dir)
-end
-
 -- get configs from https://github.com/AlteriaX/WuWa-Configs, return version installed
 local function get_engine_config()
     local latest_version_file = path.join(engine_configs_path, ".latest")
@@ -497,6 +341,9 @@ local function test_hash(files, base_dir, progress_callback)
             if hashed ~= file.md5 then
                 table.insert(results, file)
             end
+        else
+            -- file missing
+            table.insert(results, file)
         end
     end
 
@@ -730,6 +577,12 @@ return {
                         end
                         local update_index_file = str.decode(str.from_bytes(update_index_file_resp.body), "json")
 
+                        -- find file that ends with .krdiff
+                        local diff_file = iter(update_index_file.resource).cloned().find(function(f)
+                            return f.dest:sub(-7) == ".krdiff"
+                        end)
+                        local diff_file_dest = output_dir .. diff_file.dest
+
                         return {
                             title = i18n("update_game"),
                             description = i18n("update_game_description", {
@@ -738,57 +591,95 @@ return {
                             }),
                             pipeline = {
                                 {
-                                    title = i18n("delete"),
+                                    title = i18n("update"),
                                     perform = function(updater)
-                                        -- delete each path in the deleteFiles array
-                                        for i, file in update_index_file.deleteFiles do
-                                            fs.remove(path.join(output_dir, file))
+                                        -- download and patch the diff file
+                                        local function progress(current, total)
+                                            local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
+                                            local total_gb = math.floor((total / 1000 / 1000 / 1000) * 10) / 10
+
                                             updater({
-                                                title = i18n("delete_old_files"),
+                                                title = i18n("update_game"),
                                                 progress = {
-                                                    current = i,
-                                                    total = #update_index_file.deleteFiles,
-                                                    format = i18n("deleting_progress", {
-                                                        current = i,
-                                                        total = #update_index_file.deleteFiles
+                                                    current = current,
+                                                    total = total,
+                                                    format = i18n("downloading_progress", {
+                                                        current = current_gb,
+                                                        total = total_gb
                                                     })
                                                 }
                                             })
                                         end
+
+                                        -- download
+                                        local downloader_handle = downloader.create()
+                                        local task_handle = downloader.download(downloader_handle, {
+                                            url = resource_info.cdn_url .. patch_config.baseUrl .. string.gsub(diff_file.dest, " ", "%%20"),
+                                            output_file = diff_file_dest,
+                                            continue_download = true,
+
+                                            on_update = progress,
+
+                                            on_finish = function(total)
+                                                print(`finished downloading "{diff_file.dest}"`)
+                                                progress(total, total)
+                                            end
+                                        })
+                                        downloader.wait(task_handle)
+                                        downloader.close(downloader_handle)
+
+                                        -- patch
+                                        dpatchz.patch_file(diff_file_dest, output_dir)
+                                        print(`finished patching "{diff_file.dest}"`)
+
+                                        fs.remove(diff_file_dest)
                                     end
                                 },
                                 {
                                     title = i18n("update"),
                                     perform = function(updater)
-                                        -- patch the files in the resource array
-                                        patch_files(
-                                            update_index_file.resource,
-                                            resource_info,
-                                            patch_config,
+                                        -- remove diff file from files list
+                                        local non_diff_files = iter(update_index_file.resource).filter(function(f)
+                                            return f.dest:sub(-7) ~= ".krdiff"
+                                        end).collect()
+
+                                        -- update remaining files
+                                        parallel_download(
+                                            non_diff_files,
+                                            resource_info.base_url,
                                             output_dir,
                                             concurrent_downloads,
                                             function(current, total)
-                                                local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
-                                                local total_gb = math.floor((total / 1000 / 1000 / 1000) * 10) / 10
-
                                                 updater({
                                                     title = i18n("update_game"),
                                                     progress = {
                                                         current = current,
                                                         total = total,
-                                                        format = i18n("downloading_progress", {
-                                                            current = current_gb,
-                                                            total = total_gb
-                                                        })
+                                                        format = function()
+                                                            -- convert to GB for display
+                                                            local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
+                                                            local total_gb = math.floor((total / 1000 / 1000 / 1000) * 10) / 10
+
+                                                            return i18n("downloading_progress", {
+                                                                current = current_gb,
+                                                                total = total_gb
+                                                            })
+                                                        end
                                                     }
                                                 })
                                             end
                                         )
-
-                                        -- save version
-                                        set_installed_version(variant.edition, resource_info.version)
                                     end
-                                }
+                                },
+                                {
+                                    title = i18n("update"),
+                                    perform = function(updater)
+                                        -- delete each path in the deleteFiles array
+                                        for i, file in update_index_file.deleteFiles do
+                                            fs.remove(path.join(output_dir, file))
+                                        end
+                                    end
+                                },
                                 {
                                     title = i18n("repair"),
                                     perform = function(updater)
