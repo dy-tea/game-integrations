@@ -14,7 +14,7 @@
 -- You should have received a copy of the GNU General Public License
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-local URL = "https://codeberg.org/mkrsym1/jadeite/releases/"
+local URL = "https://codeberg.org/mkrsym1/jadeite/"
 
 type LaunchCommand = {
     binary: string,
@@ -22,18 +22,48 @@ type LaunchCommand = {
     env: { [string]: string }?
 }
 
+type GameStatus = {
+    status: string,
+    version: string
+}
+
 local data_dir_path: string = path.persist_dir("jadeite")
+local latest_version_path: string = path.join(data_dir_path, ".latest")
+
+-- fetch metadata from codeberg
+local function get_metadata()
+    local resp = net.fetch(URL .. "raw/branch/master/metadata.json")
+
+    if resp then
+        if resp.is_ok then
+            return str.decode(str.from_bytes(resp.body), "json")
+        else
+            error(`jadeite - codeberg returned status code {resp.status}`)
+        end
+    end
+
+    print(`jadeite - failed to reach codeberg`)
+    return nil
+end
 
 -- get the latest version
 local function latest_version()
-    local resp = net.fetch(URL .. "latest")
+    -- fetch version from codeberg
+    local metadata = get_metadata()
+    if metadata then
+        local version = "v" .. metadata.jadeite.version
+        if version then
+            print(`jadeite - latest version: {version}`)
+            return version
+        end
+    end
 
-    if resp.is_ok then
-        local body = str.from_bytes(resp.body)
-        local match = body:match('"tag/(.-)"')
-        if match then
-            dbg(`jadeite - latest version: {match}`)
-            return match
+    -- fetch version from .latest file
+    if fs.exists(latest_version_path) then
+        local version = str.from_bytes(fs.read_file(latest_version_path))
+        if version then
+            print(`jadeite - latest version: {version}`)
+            return version
         end
     end
 
@@ -43,7 +73,7 @@ end
 
 -- construct archive url for version
 local function archive_url(version: string)
-    return URL .. "download/" .. version .. "/" .. version .. ".zip"
+    return URL .. "releases/download/" .. version .. "/" .. version .. ".zip"
 end
 
 -- download and extract specified version
@@ -67,6 +97,12 @@ local function fetch(version: string)
 
     -- remove archive
     fs.remove(archive_path)
+
+    -- write new version to .latest file
+    if fs.exists(latest_version_path) then
+        fs.remove(latest_version_path)
+    end
+    fs.write_file(latest_version_path, version)
 end
 
 local function executable(version: string)
@@ -78,13 +114,13 @@ local function init(version: string?)
     if not fs.exists(path.join(data_dir_path, ver)) then
         fetch(ver)
     end
+    return ver
 end
 
 return {
     init = init,
     wrap_launch_command = function(command: LaunchCommand, version: string?): LaunchCommand
-        local ver = version or latest_version()
-        init(ver)
+        local ver = init(version)
 
         -- args will be args to jadeite
         -- game path, launcher path, game args
@@ -102,5 +138,23 @@ return {
         }
 
         return cmd :: LaunchCommand
+    end,
+    get_game_status = function(game: string, edition: string)
+        local metadata = get_metadata()
+        if not metadata then
+            error("jadeite - metadata not found")
+        end
+
+        local game_data = metadata[game]
+        if game_data then
+            local edition_data = game_data.editions[edition]
+            if edition_data then
+                return edition_data :: GameStatus
+            else
+                error(`jadeite - no such edition {edition} for game {game}`)
+            end
+        else
+            error(`jadeite - no such game {game}`)
+        end
     end
 }

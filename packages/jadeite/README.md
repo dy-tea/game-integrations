@@ -1,5 +1,7 @@
 # jadeite v0.0.0
 
+Module for running games with the jadeite autopatcher.
+
 ## Integration
 
 Add jadeite module to your package inputs:
@@ -8,7 +10,7 @@ Add jadeite module to your package inputs:
 {
     "standard": 1,
     "inputs": {
-        "jadeite": "http://127.0.0.1:8080/packages/jadeite/jadeite.luau"
+        "jadeite": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/jadeite/jadeite.luau"
     }
 }
 ```
@@ -21,6 +23,8 @@ local jadeite = import("jadeite")
 ```
 
 ## Examples
+
+Wrapping the launch command:
 
 ```luau
 local jadeite = import("jadeite")
@@ -59,4 +63,21 @@ return jadeite.wrap_launch_command({
   status = "normal",
   binary = "path/to/binary"
 }, "v2.0.0")
+```
+
+Getting the game status of a given game:
+
+```luau
+type GameStatus = {
+  status: string,
+  version: string
+}
+```
+
+```luau
+local jadeite = import("jadeite")
+
+local game_status = jadeite.get_game_status(game, edition)
+print(game_status.status)
+print(game_status.version)
 ```
