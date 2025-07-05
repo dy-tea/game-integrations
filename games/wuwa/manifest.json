@@ -9,7 +9,7 @@
     "developer": "KURO GAMES",
     "publisher": "KURO GAMES",
     "images": {
-      "icon": "http://127.0.0.1:8080/games/wuwa/icon.avif",
+      "icon": "http://127.0.0.1:8080/games/wuwa/icon.jpg",
       "poster": "http://127.0.0.1:8080/games/wuwa/poster.jpg",
       "background": "http://127.0.0.1:8080/games/wuwa/background.png",
       "slides": [

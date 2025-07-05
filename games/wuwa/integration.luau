@@ -30,6 +30,7 @@ type Version = {
 local i18n = import("i18n").i18n
 local iter = import("iterable")
 local jadeite = import("jadeite")
+local dpatchz = import("dpatchz")
 
 local data_dir_path: string = path.persist_dir("wuthering_waves")
 local engine_configs_path = path.join(data_dir_path, "engine_configs")
@@ -54,7 +55,7 @@ local function get_installed_version(edition: string): string?
         return nil
     end
 
-    return str.from_bytes(fs.read_file(version_file_path))
+    return str.from_bytes(fs.read_file(version_file_path)):gsub("%s", "")
 end
 
 -- write version to .version file of given edition
@@ -100,10 +101,20 @@ local function get_resource_info(edition: string)
             error(`resources base path not found`)
         end
 
+        -- get patchConfig
+        local patch_config = nil
+        if body.default.config.patchConfig then
+            patch_config = body.default.config.patchConfig
+        else
+            error(`patchConfig not found`)
+        end
+
         return {
+            cdn_url = cdn_url,
             version = current_version,
             index_file = index_file,
-            base_url = base_url
+            base_url = base_url,
+            patch_config = patch_config
         }
     end
 
@@ -121,6 +132,7 @@ local function is_game_installed(edition: string): boolean
     return fs.exists(game_exe_path(edition))
 end
 
+
 local function parallel_download(files, base_url, output_dir, max_parallel, progress_callback)
     -- calculate total download size
     local total_size = iter(files).cloned().fold(0, function(acc, f)
@@ -135,59 +147,250 @@ local function parallel_download(files, base_url, output_dir, max_parallel, prog
 
     -- create shared downloader
     local downloader_handle = downloader.create()
+    local active_tasks = {}
+    local file_index = 1
+    local completed_count = 0
 
-    -- process files in chunks of max_parallel
-    local i = 1
-    while i <= #files do
-        local active_tasks = {}
+    -- start a download for a file
+    local function start_download(idx)
+        local file = files[idx]
+        local dest_path = path.join(output_dir, file.dest)
 
-        -- start up to max_parallel downloads
-        for j = i, math.min(i + max_parallel - 1, #files) do
-            local file = files[j]
-            local dest_path = path.join(output_dir, file.dest)
+        -- skip file if exists
+        if fs.exists(dest_path) then
+            download_progress[idx] = file.size
+            progress_callback(iter(download_progress).cloned().sum(), total_size)
+            completed_count += 1
+            return false
+        end
 
-            -- skip file if exists
-            if fs.exists(dest_path) then
-                download_progress[j] = file.size
+        -- calculate file URL
+        local file_url = base_url .. string.gsub(file.dest, " ", "%%20")
+
+        -- download the file, callback with sum of downloaded file sizes
+        local task_handle = downloader.download(downloader_handle, {
+            url = file_url,
+            output_file = dest_path,
+            continue_download = true,
+
+            on_update = function(current, _)
+                download_progress[idx] = current
                 progress_callback(iter(download_progress).cloned().sum(), total_size)
-                continue
+            end,
+
+            on_finish = function(total)
+                download_progress[idx] = total
+                progress_callback(iter(download_progress).cloned().sum(), total_size)
+                print(`finished downloading "{file.dest}"`)
             end
+        })
 
-            -- calculate file URL
-            local file_url = base_url .. string.gsub(file.dest, " ", "%%20")
+        active_tasks[idx] = task_handle
+        return true
+    end
 
-            -- download the file, callback with sum of downloaded file sizes
-            local task_handle = downloader.download(downloader_handle, {
-                url = file_url,
-                output_file = dest_path,
-                continue_download = true,
+    -- start initial batch of downloads
+    while file_index <= #files and #active_tasks < max_parallel do
+        start_download(file_index)
+        file_index += 1
+    end
 
-                on_update = function(current, _)
-                    download_progress[j] = current
-                    progress_callback(iter(download_progress).cloned().sum(), total_size)
-                end,
-
-                on_finish = function(total)
-                    download_progress[j] = total
-                    progress_callback(iter(download_progress).cloned().sum(), total_size)
-                end
-            })
-
-            active_tasks[j] = task_handle
-        end
-
-        -- wait for all active downloads to complete
-        for j = i, math.min(i + max_parallel - 1, #files) do
-            if active_tasks[j] then
-                downloader.wait(active_tasks[j])
+    -- maintain max_parallel active downloads
+    while completed_count < #files do
+        -- check for completed downloads
+        local completed_files = {}
+        for idx, task_handle in pairs(active_tasks) do
+            local progress = downloader.progress(task_handle)
+            if progress.finished then
+                table.insert(completed_files, idx)
+                completed_count += 1
             end
         end
 
-        -- move to the next chunk of files
-        i = i + max_parallel
+        -- remove completed downloads from active_tasks
+        for _, idx in ipairs(completed_files) do
+            downloader.wait(active_tasks[idx])
+            active_tasks[idx] = nil
+        end
+
+        -- start new downloads to fill up to max_parallel
+        while file_index <= #files and #active_tasks < max_parallel do
+            start_download(file_index)
+            file_index += 1
+        end
+
+        -- should probably sleep here but there is not a sane way to do it in lua
     end
 
     downloader.close(downloader_handle)
+end
+
+
+-- find patch config corresponding to from_version
+local function get_patch_config(resource_info, from_version: string)
+    for i, config in resource_info.patch_config do
+        if config.version == from_version then
+            return config
+        end
+    end
+
+    return nil
+end
+
+-- download and patch files in paralell
+local function patch_files(resource_file_list, resource_info, patch_config, output_dir, max_parallel, progress_callback)
+    -- calculate total download size
+    local total_size = iter(resource_file_list).cloned().fold(0, function(acc, f)
+        return acc + f.size
+    end)
+
+    -- store downloaded bytes of each file in table
+    local download_progress = {}
+    for i = 1, #resource_file_list do
+        download_progress[i] = 0
+    end
+
+    -- create patchfile dir to store patch files
+    local patchfile_dir = path.join(output_dir, "downloading")
+    if not fs.exists(patchfile_dir) then
+        fs.create_dir(patchfile_dir)
+    end
+
+    -- download files in parallel, patch while downloading others
+    local downloader_handle = downloader.create()
+    local active_tasks = {}
+    local completed_count = 0
+    local file_index = 1
+
+    local function start_download_patch(idx)
+        local file = resource_file_list[idx]
+        local from_folder = file.fromFolder
+
+        local patchfile_dest = path.join(patchfile_dir, `{idx}.patch`)
+        local dest_path = path.join(output_dir, file.dest)
+
+        -- handle downloaded entire files
+        if fs.exists(dest_path) then
+            -- get hash of file
+            local result = hash.file(dest_path, "md5")
+            local hashed = iter(result).fold("", function(acc, word)
+                return acc .. string.format("%02x", word)
+            end)
+            hashed = string.lower(hashed)
+
+            if hashed == file.md5 then
+                -- matching hash means we should skip the file
+                download_progress[idx] = file.size
+                progress_callback(iter(download_progress).cloned().sum(), total_size)
+                completed_count += 1
+
+                print(`finished patching "{file.dest}"`)
+                return
+            else
+                -- mismatched hash means we should remove the file
+                fs.remove(dest_path)
+            end
+        end
+
+        -- handle downloaded patch files
+        if fs.exists(patchfile_dest .. ".completed") then
+            download_progress[idx] = file.size
+            progress_callback(iter(download_progress).cloned().sum(), total_size)
+            completed_count += 1
+
+            print(`finished patching "{file.dest}"`)
+            return
+        end
+
+        local file_url = nil
+        if from_folder then
+            file_url = resource_info.cdn_url .. from_folder .. string.gsub(file.dest, " ", "%%20")
+        else
+            file_url = resource_info.cdn_url .. patch_config.baseUrl .. string.gsub(file.dest, " ", "%%20")
+        end
+
+        local handle_finish = function(_)
+            print(`finished downloading "{file.dest}"`)
+
+            -- overwite files
+            if from_folder then
+                if fs.exists(dest_path) then
+                    fs.remove(dest_path)
+                end
+                fs.move(patchfile_dest, dest_path)
+            else
+                -- patch file
+                dpatchz.patch_file(patchfile_dest, output_dir)
+
+                -- remove patch file
+                if fs.exists(patchfile_dest) then
+                    fs.remove(patchfile_dest)
+                end
+
+                -- created completed file
+                fs.create_file(patchfile_dest .. ".completed")
+            end
+
+            -- callback
+            download_progress[idx] = file.size
+            progress_callback(iter(download_progress).cloned().sum(), total_size)
+
+            print(`finished patching "{file.dest}"`)
+        end
+
+        if fs.exists(patchfile_dest) then
+            handle_finish(nil)
+        else
+            local handle = downloader.download(downloader_handle, {
+                url = file_url,
+                output_file = patchfile_dest,
+                continue_download = true,
+                on_update = function(current, _)
+                    download_progress[idx] = current
+                    progress_callback(iter(download_progress).cloned().sum(), total_size)
+                end,
+                on_finish = handle_finish
+            })
+
+            active_tasks[idx] = handle
+        end
+    end
+
+    -- start inital batch
+    while file_index <= #resource_file_list and #active_tasks < max_parallel do
+        start_download_patch(file_index)
+        file_index += 1
+    end
+
+    -- maintain max_parallel tasks
+    while completed_count < #resource_file_list do
+        -- check for completions
+        local completed_files = {}
+        for idx, task_handle in pairs(active_tasks) do
+            local progress = downloader.progress(task_handle)
+            if progress.finished then
+                table.insert(completed_files, idx)
+                completed_count += 1
+            end
+        end
+
+        -- remove completed downloads from active_tasks
+        for _, idx in ipairs(completed_files) do
+            downloader.wait(active_tasks[idx])
+            active_tasks[idx] = nil
+        end
+
+        -- start new downloads to fill up to max_parallel
+        while file_index <= #resource_file_list and #active_tasks < max_parallel do
+            start_download_patch(file_index)
+            file_index += 1
+        end
+
+        -- should probably sleep here but there is not a sane way to do it in lua
+    end
+
+    downloader.close(downloader_handle)
+    fs.remove_dir(patchfile_dir)
 end
 
 -- get configs from https://github.com/AlteriaX/WuWa-Configs, return version installed
@@ -195,10 +398,14 @@ local function get_engine_config()
     local latest_version_file = path.join(engine_configs_path, ".latest")
 
     -- fetch tags
-    local headers = {}
-    headers["User-Agent"] = "curl/8.13.0"
-    headers["Accept"] = "*/*"
-    local tags_resp = net.fetch("https://api.github.com/repos/AlteriaX/WuWa-Configs/tags", { method = "get", headers = headers , body = {}})
+    local tags_resp = net.fetch("https://api.github.com/repos/AlteriaX/WuWa-Configs/tags", {
+        method = "get",
+        headers = {
+           ["User-Agent"] = "curl/8.13.0",
+           ["Accept"] = "*/*"
+        },
+        body = {}
+    })
     if tags_resp.is_ok then
         -- decode json
         local tags_json = str.decode(str.from_bytes(tags_resp.body), "json")
@@ -216,10 +423,7 @@ local function get_engine_config()
         local handle = downloader.create()
         local task = downloader.download(handle, {
             url = `https://github.com/AlteriaX/WuWa-Configs/archive/refs/tags/{name}.zip`,
-            output_file = output_file,
-            on_finish = function(total)
-                dbg(`downloaded {total} B`)
-            end
+            output_file = output_file
         })
         downloader.wait(task)
         downloader.close(handle)
@@ -276,25 +480,90 @@ local function test_hash(files, base_dir, progress_callback)
 
         -- remove existing file if it doesn't match the hash
         if fs.exists(dest_path) then
-            dbg(`Hashing file {dest_path}`)
+            print(`hashing file "{dest_path}"`)
             local result = hash.file(dest_path, "md5")
 
             current_size += file.size
             progress_callback(current_size, total_size)
 
-
             -- format result to lowercase md5
-            local hashed = iter(result).fold("", function(acc, word) return acc .. string.format("%02x", word) end)
+            local hashed = iter(result).fold("",
+                function(acc, word)
+                    return acc .. string.format("%02x", word)
+                end)
             hashed = string.lower(hashed)
 
             -- remove file if non-matching
             if hashed ~= file.md5 then
-                table.insert(results, file.dest)
+                table.insert(results, file)
             end
         end
     end
 
     return results
+end
+
+-- redownload files until they pass the hash check
+local function repair_files(files, base_url, output_dir, concurrent_downloads, updater)
+    local hash_result = files
+    while true do
+        -- get hash result
+        hash_result = test_hash(hash_result, output_dir, function(current_size, total_size)
+            updater({
+                title = i18n("hash"),
+                progress = {
+                    current = current_size,
+                    total = total_size,
+                    format = function()
+                        local current_gb = math.floor((current_size / 1000 / 1000 / 1000) * 10) / 10
+                        local total_gb = math.floor((total_size / 1000 / 1000 / 1000) * 10) / 10
+
+                        return i18n("processing_progress", {
+                            current = current_gb,
+                            total = total_gb
+                        })
+                    end
+                }
+            })
+        end)
+
+        -- no corrupted files
+        if #hash_result == 0 then
+            return
+        end
+
+        -- remove corrupted files
+        for _, file in hash_result do
+            fs.remove(path.join(output_dir, file.dest))
+        end
+
+        -- redownload corrupted files
+        parallel_download(
+            hash_result,
+            base_url,
+            output_dir,
+            concurrent_downloads,
+            function(current, total)
+                updater({
+                    title = i18n("repair_game_files"),
+                    progress = {
+                        current = current,
+                        total = total,
+                        format = function()
+                            -- convert to gb for display
+                            local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
+                            local total_gb = math.floor((total / 1000 / 1000 / 1000) * 10) / 10
+
+                            return i18n("repairing_progress", {
+                                current = current_gb,
+                                total = total_gb
+                            })
+                        end
+                    }
+                })
+            end
+        )
+    end
 end
 
 -- settings management
@@ -425,13 +694,18 @@ return {
             local components = import_components()
             local diff = components.game.get_diff(variant)
 
+            -- components diff
             if diff then
                 return diff
             end
 
-            -- check if there's an update
             local resource_info = get_resource_info(variant.edition)
             local installed_version = get_installed_version(variant.edition)
+            local output_dir = path.join(data_dir_path, variant.edition)
+
+            -- get max parallel setting
+            local settings = import_settings()
+            local concurrent_downloads = tonumber(settings.get_property("download.max_parallel"))
 
             -- get indexFile.json
             local index_file_resp = net.fetch(resource_info.index_file)
@@ -441,131 +715,107 @@ return {
             end
             local index_file_data = str.decode(str.from_bytes(index_file_resp.body), "json")
 
-            local output_dir = path.join(data_dir_path, variant.edition)
-
-            -- get max parallel setting
-            local settings = import_settings()
-            local concurrent_downloads = tonumber(settings.get_property("download.max_parallel"))
-
+            -- update
             if is_game_installed(variant.edition) then
+                -- check if version is not latest
                 if installed_version and resource_info.version and installed_version ~= resource_info.version then
-                    return {
-                        title = i18n("update_game"),
-                        description = i18n("update_game_description", {
-                            current = installed_version,
-                            new = resource_info.version
-                        }),
-                        pipeline = {
-                            {
-                                title = "Cleaning outdated files",
-                                perform = function(updater)
-                                    fs.remove(output_dir)
-                                end
-                            },
-                            {
-                                title = i18n("download_game_files"),
-                                perform = function(updater)
-                                    -- start parallel download
-                                    parallel_download(
-                                        index_file_data.resource,
-                                        resource_info.base_url,
-                                        output_dir,
-                                        concurrent_downloads,
-                                        function(current, total)
-                                            updater({
-                                                title = i18n("downloading_game_files"),
-                                                progress = {
-                                                    current = current,
-                                                    total = total,
-                                                    format = function()
-                                                        -- convert to gb for display
-                                                        local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
-                                                        local total_gb = math.floor((total / 1000 / 1000 / 1000) * 10) / 10
-                                                        local percentage = math.floor((current / total) * 100)
+                    -- get patch config for installed version to latest version
+                    local patch_config = get_patch_config(resource_info, installed_version)
+                    if patch_config then
+                        -- get indexFile.json
+                        local update_index_file_resp = net.fetch(resource_info.cdn_url .. patch_config.indexFile)
+                        if not update_index_file_resp.is_ok then
+                            error(`could not fetch indexFile.json`)
+                            return
+                        end
+                        local update_index_file = str.decode(str.from_bytes(update_index_file_resp.body), "json")
 
-                                                        return i18n("downloading_progress", {
-                                                            current = current_gb,
-                                                            total = total_gb,
-                                                            percentage = percentage
-                                                        })
-                                                    end
+                        return {
+                            title = i18n("update_game"),
+                            description = i18n("update_game_description", {
+                                current = installed_version,
+                                new = resource_info.version
+                            }),
+                            pipeline = {
+                                {
+                                    title = i18n("delete"),
+                                    perform = function(updater)
+                                        -- delete each path in the deleteFiles array
+                                        for i, file in update_index_file.deleteFiles do
+                                            fs.remove(path.join(output_dir, file))
+                                            updater({
+                                                title = i18n("delete_old_files"),
+                                                progress = {
+                                                    current = i,
+                                                    total = #update_index_file.deleteFiles,
+                                                    format = i18n("deleting_progress", {
+                                                        current = i,
+                                                        total = #update_index_file.deleteFiles
+                                                    })
                                                 }
                                             })
                                         end
-                                    )
-
-                                    -- save version
-                                    set_installed_version(variant.edition, resource_info.version)
-                                end
-                            },
-                            {
-                                title = "Verifying files",
-                                perform = function(updater)
-                                    while true do
-                                        -- get hash result
-                                        local hash_result = test_hash(index_file_data.resource, output_dir, function(current_size, total_size)
-                                            updater({
-                                                title = "Calculating file hash",
-                                                progress = {
-                                                current = current_size,
-                                                total = total_size,
-                                                format = function()
-                                                    local current_gb = math.floor((current_size / 1000 / 1000 / 1000) * 10) / 10
-                                                    local total_gb = math.floor((total_size / 1000 / 1000 / 1000) * 10) / 10
-                                                    local percentage = math.floor((current_size / total_size) * 100)
-
-                                                    return "Processed " .. current_gb .. " GB of " .. total_gb .. " GB - " .. percentage .. "%"
-                                                end
-                                            }
-                                        })
-                                        end)
-
-                                        -- no corrupted files
-                                        if #hash_result == 0 then
-                                            break
-                                        end
-
-                                        -- remove corrupted files
-                                        for _, file in hash_result do
-                                            fs.remove(path.join(output_dir, file))
-                                        end
-
-                                        -- redownload corrupted files
-                                        parallel_download(
-                                            hash_result,
-                                            resource_info.base_url,
+                                    end
+                                },
+                                {
+                                    title = i18n("update"),
+                                    perform = function(updater)
+                                        -- patch the files in the resource array
+                                        patch_files(
+                                            update_index_file.resource,
+                                            resource_info,
+                                            patch_config,
                                             output_dir,
                                             concurrent_downloads,
                                             function(current, total)
+                                                local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
+                                                local total_gb = math.floor((total / 1000 / 1000 / 1000) * 10) / 10
+
                                                 updater({
-                                                    title = i18n("downloading_game_files"),
+                                                    title = i18n("update_game"),
                                                     progress = {
                                                         current = current,
                                                         total = total,
-                                                        format = function()
-                                                            -- convert to gb for display
-                                                            local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
-                                                            local total_gb = math.floor((total / 1000 / 1000 / 1000) * 10) / 10
-                                                            local percentage = math.floor((current / total) * 100)
-
-                                                            return i18n("downloading_progress", {
-                                                                current = current_gb,
-                                                                total = total_gb,
-                                                                percentage = percentage
-                                                            })
-                                                        end
+                                                        format = i18n("downloading_progress", {
+                                                            current = current_gb,
+                                                            total = total_gb
+                                                        })
                                                     }
                                                 })
                                             end
                                         )
+
+                                        -- save version
+                                        set_installed_version(variant.edition, resource_info.version)
                                     end
-                                end
+                                }
+                                --{
+                                --    title = i18n("repair"),
+                                --    perform = function(updater)
+                                --        -- run repairer
+                                --        repair_files(
+                                --            index_file_data.resource,
+                                --            resource_info.base_url,
+                                --            output_dir,
+                                --            concurrent_downloads,
+                                --            updater
+                                --        )
+                                --
+                                --        -- save version
+                                --        set_installed_version(variant.edition, resource_info.version)
+                                --    end
+                                --}
                             }
                         }
-                    }
-                end
+                    end
 
-                return nil
+                    -- no patch, delete outdated files
+                    print("no patch available")
+                    fs.remove(output_dir)
+                else
+                    -- game is installed and up to date
+                    return nil
+                end
             end
 
             -- fresh installation
@@ -578,9 +828,8 @@ return {
                 pipeline = {
                     {
                         title = i18n("download_game_files"),
-
                         perform = function(updater)
-                            -- start parallel download
+                            -- download game fiels
                             parallel_download(
                                 index_file_data.resource,
                                 resource_info.base_url,
@@ -593,20 +842,31 @@ return {
                                             current = current,
                                             total = total,
                                             format = function()
-                                                -- Convert to GB for display
+                                                -- convert to GB for display
                                                 local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
                                                 local total_gb = math.floor((total / 1000 / 1000 / 1000) * 10) / 10
-                                                local percentage = math.floor((current / total) * 100)
 
                                                 return i18n("downloading_progress", {
                                                     current = current_gb,
-                                                    total = total_gb,
-                                                    percentage = percentage
+                                                    total = total_gb
                                                 })
                                             end
                                         }
                                     })
                                 end
+                            )
+                        end
+                    },
+                    {
+                        title = i18n("repair"),
+                        perform = function(updater)
+                            -- run repairer
+                            repair_files(
+                                index_file_data.resource,
+                                resource_info.base_url,
+                                output_dir,
+                                concurrent_downloads,
+                                updater
                             )
 
                             -- save version
