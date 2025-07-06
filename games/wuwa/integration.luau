@@ -636,46 +636,7 @@ return {
                                     end
                                 },
                                 {
-                                    title = i18n("update"),
-                                    perform = function(updater)
-                                        -- remove diff file from files list
-                                        local non_diff_files = {}
-                                        for i, file in ipairs(update_index_file.resource) do
-                                            if file.dest:sub(-7) ~= ".krdiff" then
-                                                table.insert(non_diff_files, file)
-                                            end
-                                        end
-
-                                        -- update remaining files
-                                        parallel_download(
-                                            non_diff_files,
-                                            resource_info.base_url,
-                                            output_dir,
-                                            concurrent_downloads,
-                                            function(current, total)
-                                                updater({
-                                                    title = i18n("update_game"),
-                                                    progress = {
-                                                        current = current,
-                                                        total = total,
-                                                        format = function()
-                                                            -- convert to GB for display
-                                                            local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
-                                                            local total_gb = math.floor((total / 1000 / 1000 / 1000) * 10) / 10
-
-                                                            return i18n("downloading_progress", {
-                                                                current = current_gb,
-                                                                total = total_gb
-                                                            })
-                                                        end
-                                                    }
-                                                })
-                                            end
-                                        )
-                                    end
-                                },
-                                {
-                                    title = i18n("update"),
+                                    title = i18n("delete"),
                                     perform = function(updater)
                                         -- delete each path in the deleteFiles array
                                         for i, file in update_index_file.deleteFiles do
