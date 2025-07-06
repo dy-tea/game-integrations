@@ -157,8 +157,14 @@ return {
         init()
 
         -- check paths
-        if not (path.accessible(exe_path) or path.accessible(old_path) or (new_path and path.accessible(new_path))) then
-            error(`one or more paths are not accessible, check if these exist: exe_path: {exe_path}    old_path: {old_path}    new_path: {new_path}`)
+        if not path.accessible(exe_path) or not path.accessible(old_path) then
+            if new_path then
+                if not path.accessible(new_path) then
+                    error(`one or more paths are not accessible, check if these exist: exe_path: {exe_path}    old_path: {old_path}    new_path: {new_path}`)
+                end
+            else
+                error(`one or more paths are not accessible, check if these exist: exe_path: {exe_path}    old_path: {old_path}`)
+            end
         end
 
         -- ensure dpatchz executable is valid
