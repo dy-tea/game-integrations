@@ -18,10 +18,10 @@
 
 local data_dir_path: string = path.persist_dir("dpatchz")
 local exe_path: string = path.join(data_dir_path, "dpatchz")
-local version_file_path: string = path.join(data_dir_path, ".version")
+local version_file_path: string = path.join(data_dir_path, "version")
 
--- get latest version from github api
-local function latest_version()
+-- get latest json from github api
+local function latest_json()
     local resp = net.fetch("https://api.github.com/repos/dawn-winery/dpatchz/releases/latest", {
         method = "get",
         headers = {
@@ -31,13 +31,22 @@ local function latest_version()
         body = {}
     })
 
-    -- fetch version from github api
+    if not resp then
+        error(`github api is not accessible`)
+    end
+
+    -- decode response json
     if resp.is_ok then
-        local json = str.decode(str.from_bytes(resp.body), "json")
-        return json.tag_name
+        return str.decode(str.from_bytes(resp.body), "json")
     end
 
     return nil
+end
+
+-- get latest version
+local function latest_version()
+    local json = latest_json()
+    return json.tag_name
 end
 
 -- get installed version
@@ -51,24 +60,73 @@ end
 
 -- download dpatch executable from version
 local function fetch(version: string)
-    local resp = net.fetch("https://github.com/dawn-winery/dpatchz/releases/download/" .. version .. "/dpatchz")
-
-    if not resp.is_ok then
-        error("Failed to fetch dpatch executable")
-        return
-    end
-
-    -- write executable
+    -- remove old executable if present
     if fs.exists(exe_path) then
         fs.remove(exe_path)
     end
-    fs.write_file(exe_path, resp.body)
 
-    -- write version to .version
+    -- download latest release
+    local handle = downloader.create()
+    local download = downloader.download(handle, {
+        url = "https://github.com/dawn-winery/dpatchz/releases/download/" .. version .. "/dpatchz",
+        output_file = exe_path,
+        on_finish = function(total)
+            print(`dpatchz - downloaded {total / 1024} KiB`)
+        end
+    })
+    downloader.wait(download)
+    downloader.close(handle)
+
+    -- write version to version file
     if fs.exists(version_file_path) then
         fs.remove(version_file_path)
     end
     fs.write_file(version_file_path, version)
+
+    -- give executable permissions
+    local output = process.exec("chmod", {"+x", exe_path})
+    if not output.is_ok then
+        local stdout = str.from_bytes(output.stdout)
+        local stderr = str.from_bytes(output.stderr)
+        error(`exited with status code {output.status}    stdout: {stdout}    stderr: {stderr}`)
+    end
+end
+
+-- get the hash of the dpatchz executable and check
+local function check_validity()
+    local json = latest_json()
+
+    if not fs.exists(exe_path) then
+        error(`dpatchz executable not found at {exe_path}`)
+    end
+
+    -- get sha256 digest from asset metadata
+    local digest = nil
+    for _, asset in json.assets do
+        if asset.name == "dpatchz" then
+            -- remove sha256 prefix
+            digest = asset.digest:gsub("sha256:", "")
+            break
+        end
+    end
+    if not digest then
+        error(`could not find digest for dpatchz executable`)
+    end
+
+    -- calculate the file's hash
+    local file_hash = hash.file(exe_path, "sha2-256")
+    local hashed = ""
+    for _, char in file_hash do
+        hashed ..= string.format("%02x", char)
+    end
+    hashed = string.lower(hashed)
+
+    -- compare hashes, remove executable if offending
+    if digest ~= hashed then
+        fs.remove(exe_path)
+        fs.remove(version_file_path)
+        error(`file hash does not match digest, removing`)
+    end
 end
 
 local function init()
@@ -90,16 +148,23 @@ end
 return {
     init = init,
     patch_file = function(diff_file: string, old_path: string, new_path: string?)
-        if not fs.exists(exe_path) then
-            init()
-            local output = process.exec("chmod", {"+x", exe_path})
-            if not output.is_ok then
-                local stdout = str.from_bytes(output.stdout)
-                local stderr = str.from_bytes(output.stderr)
-                error(`exited with status code {output.status}    stdout: {stdout}    stderr: {stderr}`)
-            end
+        -- check for process api presence
+        if not process then
+            error(`dpatchz module must have access to the v1 process API`)
         end
 
+        -- download or update executable
+        init()
+
+        -- check paths
+        if not (path.accessible(exe_path) or path.accessible(old_path) or (new_path and path.accessible(new_path))) then
+            error(`one or more paths are not accessible, check if these exist: exe_path: {exe_path}    old_path: {old_path}    new_path: {new_path}`)
+        end
+
+        -- ensure dpatchz executable is valid
+        check_validity()
+
+        -- run patcher
         local output = nil
         if new_path then
             output = process.exec("bash", {"-c", `exec {exe_path} {diff_file} {old_path} {new_path}`})
@@ -107,6 +172,7 @@ return {
             output = process.exec("bash", {"-c", `exec {exe_path} -i {diff_file} {old_path}`})
         end
 
+        -- output errors
         if not output.is_ok then
             local stdout = str.from_bytes(output.stdout)
             local stderr = str.from_bytes(output.stderr)
