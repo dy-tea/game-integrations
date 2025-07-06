@@ -1,0 +1,22 @@
+{
+  "standard": 1,
+  "package": {
+    "maintainers": [
+      "Dylan Donnell <dylan.donnell@student.griffith.ie>"
+    ]
+  },
+  "inputs": {
+    "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.luau",
+    "i18n": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/i18n/package.json",
+    "settings": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/settings/settings.luau",
+    "dpatchz": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/dpatchz/dpatchz.luau",
+    "jadeite": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/jadeite/jadeite.luau",
+    "components": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/components/package.json"
+  },
+  "outputs": {
+    "integration": {
+      "uri": "integration.luau",
+      "format": "module/v1"
+    }
+  }
+}
