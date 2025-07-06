@@ -325,20 +325,13 @@ local function test_hash(files, base_dir, progress_callback)
         -- remove existing file if it doesn't match the hash
         if fs.exists(dest_path) then
             print(`hashing file "{dest_path}"`)
-            local result = hash.file(dest_path, "md5")
+            local file_hash = str.encode(hash.file(dest_path, "md5"), "hex")
 
             current_size += file.size
             progress_callback(current_size, total_size)
 
-            -- format result to lowercase md5
-            local hashed = iter(result).fold("",
-                function(acc, word)
-                    return acc .. string.format("%02x", word)
-                end)
-            hashed = string.lower(hashed)
-
             -- remove file if non-matching
-            if hashed ~= file.md5 then
+            if file_hash ~= file.md5 then
                 table.insert(results, file)
             end
         else

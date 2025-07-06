@@ -114,15 +114,10 @@ local function check_validity()
     end
 
     -- calculate the file's hash
-    local file_hash = hash.file(exe_path, "sha2-256")
-    local hashed = ""
-    for _, char in file_hash do
-        hashed ..= string.format("%02x", char)
-    end
-    hashed = string.lower(hashed)
+    local file_hash = str.encode(hash.file(exe_path, "sha2-256"), "hex")
 
     -- compare hashes, remove executable if offending
-    if digest ~= hashed then
+    if digest ~= file_hash then
         fs.remove(exe_path)
         fs.remove(version_file_path)
         error(`file hash does not match digest, removing`)
