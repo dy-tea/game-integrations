@@ -639,9 +639,12 @@ return {
                                     title = i18n("update"),
                                     perform = function(updater)
                                         -- remove diff file from files list
-                                        local non_diff_files = iter(update_index_file.resource).filter(function(f)
-                                            return f.dest:sub(-7) ~= ".krdiff"
-                                        end).collect()
+                                        local non_diff_files = {}
+                                        for i, file in ipairs(update_index_file.resource) do
+                                            if file.dest:sub(-7) ~= ".krdiff" then
+                                                table.insert(non_diff_files, file)
+                                            end
+                                        end
 
                                         -- update remaining files
                                         parallel_download(
