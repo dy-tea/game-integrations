@@ -47,9 +47,9 @@ local function game_exe_path(edition: string)
     return path.join(data_dir_path, edition, "Client", "Binaries", "Win64", "Client-Win64-Shipping.exe")
 end
 
--- read version from .version file of given edition
+-- read version from version file of given edition
 local function get_installed_version(edition: string): string?
-    local version_file_path: string = path.join(data_dir_path, edition, ".version")
+    local version_file_path: string = path.join(data_dir_path, edition, "version")
 
     if not fs.exists(version_file_path) then
         return nil
@@ -58,9 +58,9 @@ local function get_installed_version(edition: string): string?
     return str.from_bytes(fs.read_file(version_file_path)):gsub("%s", "")
 end
 
--- write version to .version file of given edition
+-- write version to version file of given edition
 local function set_installed_version(edition: string, version: string)
-    local version_file_path: string = path.join(data_dir_path, edition, ".version")
+    local version_file_path: string = path.join(data_dir_path, edition, "version")
     fs.create_dir(data_dir_path)
     fs.write_file(version_file_path, str.to_bytes(version))
 end
@@ -723,7 +723,7 @@ return {
                     {
                         title = i18n("download_game_files"),
                         perform = function(updater)
-                            -- download game fiels
+                            -- download game files
                             parallel_download(
                                 index_file_data.resource,
                                 resource_info.base_url,

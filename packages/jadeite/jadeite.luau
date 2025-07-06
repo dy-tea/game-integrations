@@ -28,7 +28,7 @@ type GameStatus = {
 }
 
 local data_dir_path: string = path.persist_dir("jadeite")
-local latest_version_path: string = path.join(data_dir_path, ".latest")
+local latest_version_path: string = path.join(data_dir_path, "latest_version")
 
 -- fetch metadata from codeberg
 local function get_metadata()
