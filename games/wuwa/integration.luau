@@ -434,6 +434,14 @@ local function import_settings()
                                 default = false
                             }
                         },
+                        steamos = {
+                            title = "Set SteamOs Variable",
+                            description = "Set SteamOs=1",
+                            entry = {
+                                format = "switch",
+                                default = false
+                            }
+                        },
                         engine_config = {
                             title = "Alternate engine config",
                             description = "Replace Engine.ini with config from AlteriaX/WuWa-Configs",
@@ -574,7 +582,6 @@ return {
                         local diff_file = iter(update_index_file.resource).cloned().find(function(f)
                             return f.dest:sub(-7) == ".krdiff"
                         end)
-                        local diff_file_dest = output_dir .. diff_file.dest
 
                         return {
                             title = i18n("update_game"),
@@ -585,7 +592,14 @@ return {
                             pipeline = {
                                 {
                                     title = i18n("update"),
+                                    before = function(_)
+                                        -- skip if diff file is nil
+                                        print("no diff file found, skipping")
+                                        return diff_file ~= nil
+                                    end,
                                     perform = function(updater)
+                                        local diff_file_dest = output_dir .. diff_file.dest
+
                                         -- download and patch the diff file
                                         local function progress(current, total)
                                             local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
@@ -767,6 +781,13 @@ return {
 
             if use_wayland then
                 env["DISPLAY"] = ""
+            end
+
+            -- add SteamOs=1 if specified in settings
+            local use_steamos = settings.get_property("game.steamos")
+
+            if use_steamos then
+                env["SteamOs"] = 1
             end
 
             -- run game
