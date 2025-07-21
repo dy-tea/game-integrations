@@ -574,7 +574,6 @@ return {
                         local diff_file = iter(update_index_file.resource).cloned().find(function(f)
                             return f.dest:sub(-7) == ".krdiff"
                         end)
-                        local diff_file_dest = output_dir .. diff_file.dest
 
                         return {
                             title = i18n("update_game"),
@@ -585,7 +584,14 @@ return {
                             pipeline = {
                                 {
                                     title = i18n("update"),
+                                    before = function(_)
+                                        -- skip if diff file is nil
+                                        print("no diff file found, skipping")
+                                        return diff_file ~= nil
+                                    end,
                                     perform = function(updater)
+                                        local diff_file_dest = output_dir .. diff_file.dest
+
                                         -- download and patch the diff file
                                         local function progress(current, total)
                                             local current_gb = math.floor((current / 1000 / 1000 / 1000) * 10) / 10
@@ -762,7 +768,7 @@ return {
 
             -- add empty DISPLAY envvar if specified in settings
             -- first overrides are for dxvk, second is to disable popup window
-            local env = { WINEDLLOVERRIDES = "d3d8,d3d9,d3d10core,d3d11,dxgi=n;KRSDKExternal.exe=d" }
+            local env = { WINEDLLOVERRIDES = "d3d8,d3d9,d3d10core,d3d11,dxgi=n;KRSDKExternal.exe=d", SteamOS = 1 }
             local use_wayland = settings.get_property("game.wayland")
 
             if use_wayland then
