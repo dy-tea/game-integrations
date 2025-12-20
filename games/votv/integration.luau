@@ -42,7 +42,7 @@ local game_binary_path: string  = path.join(game_dir_path, "VotV.exe")
 -- Direct download links are taken from here: https://archive.org/details/votv-archive
 local function list_game_versions()
     return {
-        { version = "pa082c_0010", title = "Pre-Alpha 0.8.2c", url = "https://archive.org/download/votv-archive/pa082c_0010.7z" },
+        { version = "082c_0010",   title = "Pre-Alpha 0.8.2c", url = "https://archive.org/download/votv-archive/pa082c_0010.7z" },
         { version = "pa0082_0012", title = "Pre-Alpha 0.8.2b", url = "https://archive.org/download/votv-archive/pa0082_0012.7z" },
         { version = "pa0081_0008", title = "Pre-Alpha 0.8.1",  url = "https://archive.org/download/votv-archive/pa0081_0008.7z" },
         { version = "pa08_0017",   title = "Pre-Alpha 0.8.0",  url = "https://archive.org/download/votv-archive/pa08_0017.7z" },
@@ -218,20 +218,18 @@ return {
 
                                 on_update = function(current: number, total: number)
                                     updater({
-                                        progress = {
-                                            current = current,
-                                            total = total,
+                                        current = current,
+                                        total = total,
 
-                                            format = function()
-                                                local current = current / 1000 / 1000 / 1000
-                                                local total = total / 1000 / 1000 / 1000
+                                        format = function()
+                                            local current = current / 1000 / 1000 / 1000
+                                            local total = total / 1000 / 1000 / 1000
 
-                                                return i18n("downloading_progress", {
-                                                    current = math.floor(current * 100) / 100,
-                                                    total = math.floor(total * 100) / 100
-                                                })
-                                            end
-                                        }
+                                            return i18n("downloading_progress", {
+                                                current = math.floor(current * 100) / 100,
+                                                total = math.floor(total * 100) / 100
+                                            })
+                                        end
                                     })
                                 end
                             })
@@ -249,20 +247,18 @@ return {
 
                             archive.extract(handle, data_dir_path, function(current: number, total: number)
                                 updater({
-                                    progress = {
-                                        current = current,
-                                        total = total,
+                                    current = current,
+                                    total = total,
 
-                                        format = function()
-                                            local current = current / 1000 / 1000 / 1000
-                                            local total = total / 1000 / 1000 / 1000
+                                    format = function()
+                                        local current = current / 1000 / 1000 / 1000
+                                        local total = total / 1000 / 1000 / 1000
 
-                                            return i18n("extraction_progress", {
-                                                current = math.floor(current * 100) / 100,
-                                                total = math.floor(total * 100) / 100
-                                            })
-                                        end
-                                    }
+                                        return i18n("extraction_progress", {
+                                            current = math.floor(current * 100) / 100,
+                                            total = math.floor(total * 100) / 100
+                                        })
+                                    end
                                 })
                             end)
 
