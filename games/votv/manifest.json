@@ -25,7 +25,10 @@
                 "http://127.0.0.1:8080/games/votv/slide4.png",
                 "http://127.0.0.1:8080/games/votv/slide5.png"
             ]
-        }
+        },
+        "tags": [
+            "workarounds"
+        ]
     },
     "package": {
         "url": "http://127.0.0.1:8080/games/votv/package.json",
