@@ -1,10 +1,5 @@
 {
-    "standard": 1,
-    "package": {
-        "maintainers": [
-            "Nikita Podvirnyi <krypt0nn@vk.com>"
-        ]
-    },
+    "version": 1,
     "inputs": {
         "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.luau",
         "i18n": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/i18n/package.json",
@@ -12,9 +7,6 @@
         "components": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/components/package.json"
     },
     "outputs": {
-        "integration": {
-            "uri": "integration.luau",
-            "format": "module/v1"
-        }
+        "integration": "integration.luau"
     }
 }
