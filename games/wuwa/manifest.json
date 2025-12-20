@@ -1,0 +1,34 @@
+{
+  "standard": 1,
+  "game": {
+    "title": "Wuthering Waves",
+    "description": {
+      "en": "Wuthering Waves is a story-rich open-world action RPG with a high degree of freedom. You wake from your slumber as Rover, joined by a vibrant cast of Resonators on a journey to reclaim your lost memories and surmount the Lament.",
+      "ru": "Wuthering Waves — это сюжетная ролевая игра с открытым миром и высокой степенью свободы. Вы просыпаетесь ото сна в роли марсохода, к которому присоединяется яркий состав резонаторов в путешествии, чтобы вернуть свои утраченные воспоминания и преодолеть Плач."
+    },
+    "developer": "KURO GAMES",
+    "publisher": "KURO GAMES",
+    "images": {
+      "icon": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/icon.jpg",
+      "poster": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/poster.jpg",
+      "background": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/background.png",
+      "slides": [
+        "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/slide1.jpg",
+        "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/slide2.jpg",
+        "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/slide3.jpg",
+        "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/slide4.jpg",
+        "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/slide5.jpg"
+      ]
+    }
+  },
+  "package": {
+    "url": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/package.json",
+    "output": "integration",
+    "runtime": {
+      "platforms": ["x86_64-linux"]
+    }
+  },
+  "info": {
+    "tags": ["gambling", "payments", "anti-cheat", "unsupported-platform"]
+  }
+}

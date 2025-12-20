@@ -116,6 +116,26 @@ ru = "Обновить игру"
 en = "Extract"
 ru = "Распаковать"
 
+[hash]
+en = "Calculating file hashes"
+ru = "Вычисление хэшей"
+
+[process]
+en = "Processing"
+ru = "Обработка"
+
+[process_game_files]
+en = "Processing game files"
+ru = "Обработка файлов игры"
+
+[repair]
+en = "Repairing"
+ru = "Исправить"
+
+[repair_game_files]
+en = "Repairing game files"
+ru = "Исправить файлы игры"
+
 [extract_game_files]
 en = "Extract game files"
 ru = "Распаковать файлы игры"
@@ -151,3 +171,19 @@ ru = "Загружено {current} ГБ / {total} ГБ"
 [extraction_progress]
 en = "Extracted {current} GB / {total} GB"
 ru = "Распаковано {current} ГБ / {total} ГБ"
+
+[repairing_progress]
+en = "Repairing {current} GB / {total} GB"
+ru = "Исправление {current} ГБ / {total} ГБ"
+
+[hashing_progress]
+en = "Hashing {current} GB / {total} GB"
+ru = "Вычисление хэшей {current} ГБ / {total} ГБ"
+
+[processing_progress]
+en = "Processed {current} / {total}"
+ru = "Обработано {current} / {total}"
+
+[deleting_progress]
+en = "Deleting {current} / {total}"
+ru = "Удаление {current} / {total}"
