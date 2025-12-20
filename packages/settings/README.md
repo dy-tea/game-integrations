@@ -11,7 +11,7 @@ Add settings module to your package inputs:
 {
     "version": 1,
     "inputs": {
-        "settings": "http://127.0.0.1:8080/packages/settings/settings.luau"
+        "settings": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/settings/settings.luau"
     }
 }
 ```

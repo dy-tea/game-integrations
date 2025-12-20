@@ -11,7 +11,7 @@ Add `import` luau module to your integration package inputs:
 {
     "version": 1,
     "inputs": {
-        "import": "http://127.0.0.1:8080/packages/import/import.luau"
+        "import": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/import/import.luau"
     }
 }
 ```

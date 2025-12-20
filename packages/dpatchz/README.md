@@ -8,7 +8,7 @@ Add dpatchz module to your package inputs:
 
 ```json
 {
-    "standard": 1,
+    "version": 1,
     "inputs": {
         "dpatchz": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/dpatchz/dpatchz.luau"
     }
