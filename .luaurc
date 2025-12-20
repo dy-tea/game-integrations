@@ -1,8 +1,8 @@
 {
     "languageMode": "strict",
     "globals": [
+        "versions",
         "load",
-        "import",
         "clone",
         "dbg",
 
@@ -13,7 +13,6 @@
         "downloader",
         "archive",
         "hash",
-        "sync",
         "sqlite",
         "process"
     ]

@@ -1,4 +1,4 @@
--- components/wine v0.0.0
+-- components/wine v0.1.0
 -- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify

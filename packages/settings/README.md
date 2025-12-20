@@ -1,4 +1,4 @@
-# Settings v0.0.0
+# Settings v0.1.0
 
 A general library for managing game integration settings. Helps to construct
 game settings layout and handles properties storing in a shared SQLite database.
@@ -9,7 +9,7 @@ Add settings module to your package inputs:
 
 ```json
 {
-    "standard": 1,
+    "version": 1,
     "inputs": {
         "settings": "http://127.0.0.1:8080/packages/settings/settings.luau"
     }
@@ -26,7 +26,9 @@ local __settings = nil
 -- Initialize settings object
 local function import_settings()
     if not __settings then
-        __settings = import("settings")({
+        local settings = load("settings").value
+
+        __settings = settings({
             game = "name_of_your_game",
             layout = {
                 example_group = {
@@ -76,10 +78,11 @@ local function import_settings()
 end
 ```
 
-The overall design is very similar to the v1 game settings standard, except some
-minor differences. Settings library returns an object with `get_property`,
-`set_property` and `get_layout` functions - so exactly the object the v1 game
-settings standard requires you to implement. So you only need to do this:
+The overall design is very similar to the game integration settings layot, 
+except some minor differences. Settings library returns an object with 
+`get_property`, `set_property` and `get_layout` functions - so exactly the 
+object the game integration settings requires you to implement. So you only need 
+to do this:
 
 ```luau
 -- Your game integration module
@@ -94,4 +97,4 @@ return {
 You can also use `get_property` and `set_property` to store arbitrary values
 in the settings database. This can be used by other libraries like `components`.
 
-Licensed under [GPL-3.0](../../LICENSE).
+Licensed under [GPL-3.0-or-later](../../LICENSE).

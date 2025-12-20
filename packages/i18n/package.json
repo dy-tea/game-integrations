@@ -1,17 +1,9 @@
 {
-    "standard": 1,
-    "package": {
-        "maintainers": [
-            "Nikita Podvirnyi <krypt0nn@vk.com>"
-        ]
-    },
+    "version": 1,
     "inputs": {
         "locales": "locales.toml"
     },
     "outputs": {
-        "i18n": {
-            "uri": "i18n.luau",
-            "format": "module/v1"
-        }
+        "i18n": "i18n.luau"
     }
 }

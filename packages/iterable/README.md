@@ -8,13 +8,9 @@ Add iterable module to your package inputs:
 
 ```json
 {
-    "standard": 1,
+    "version": 1,
     "inputs": {
-<<<<<<< HEAD
         "iterable": "http://127.0.0.1:8080/packages/iterable/iterable.lua"
-=======
-        "iterable": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/iterable/iterable.luau"
->>>>>>> rewrite
     }
 }
 ```
@@ -23,7 +19,7 @@ Import the module:
 
 ```luau
 -- Import the iterable library
-local iter = import("iterable")
+local iter = load("iterable").value
 ```
 
 ## Usage
@@ -43,7 +39,7 @@ type Iterable<T> = { next: () -> Item<T>?, ... }
 Iterables implement special `__iter` metamethod to work inside of for loops.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 -- [a] = 1
 -- [b] = 2
@@ -60,7 +56,7 @@ table provided by the user. This method creates a copy of the iterator's table
 to not to mutate the one provided by the user.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local original = { 1, 2, 3 }
 
@@ -78,7 +74,7 @@ print(#cloned) -- 3, because `cloned` made a copy of the input table
 Try to poll the next iterator item, returning nil when no more items stored.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local items = iter({
     "Hello",
@@ -107,7 +103,7 @@ end
 Return first value of the iterator.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 print(iter({ "Hello", "World" }).first()) -- "Hello"
 ```
@@ -117,7 +113,7 @@ print(iter({ "Hello", "World" }).first()) -- "Hello"
 Return last value of the iterator.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 print(iter({ "Hello", "World" }).last()) -- "World"
 ```
@@ -127,7 +123,7 @@ print(iter({ "Hello", "World" }).last()) -- "World"
 Apply given function to all the iterator items, returning updated iterator.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 -- { 1, 4, 9 }
 local items = iter({ 1, 2, 3 }).map(function(num) return num * num end)
@@ -142,7 +138,7 @@ end
 Use given function to choose what items to keep in the iterator.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 -- { 2, 4 }
 for _, num in iter({ 1, 2, 3, 4 ,5 }).filter(function(num) return num % 2 == 0 end) do
@@ -155,7 +151,7 @@ end
 Execute given callback on each iterator item and return the iterator without changes.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 iter({ 1, 2, 3 })
     .for_each(function(item) print(`before: {item.value}`) end) -- { 1, 2, 3 }
@@ -168,7 +164,7 @@ iter({ 1, 2, 3 })
 Accumulate all the iterator items into a single one.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local greeting = iter({ "Hello", " ", "World" })
     .fold("", function(acc, word) return acc .. word end)
@@ -182,7 +178,7 @@ print(greeting)
 Try to find iterator item using provided search function.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local item = iter({ 1, 2, 3 }).position(function(item) return item.value % 2 == 0 end)
 
@@ -196,7 +192,7 @@ Try to find iterator item using provided search function.
 Similar to `position`, except it works with values only.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local item = iter({ 1, 2, 3 }).find(function(num) return num % 2 == 0 end)
 
@@ -209,7 +205,7 @@ Return true if there's at least one item in the iterator accepted
 by the provided function.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local has_even = iter({ 1, 2, 3 }).any(function(num) return num % 2 == 0 end)
 
@@ -227,7 +223,7 @@ Chain two iterators together.
 > if there already was one.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 -- [1] = 3
 -- [2] = 4
@@ -245,7 +241,7 @@ end
 Flatten two-dimensional array into one dimension.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local matrix = {
     { 1, 2, 3 },
@@ -263,7 +259,7 @@ print(iter(matrix).flatten().count()) -- 9
 Split an iterator into two using a comparison function.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local numbers = iter({ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 })
 
@@ -289,7 +285,7 @@ end
 Select some iterator item using provided comparison function.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local selected = iter({ 1, 2, 3, 4, 5, 6, 7 })
     .select(function(a, b) return a * a < b end)
@@ -303,7 +299,7 @@ print(selected.value)
 Calculate amount of items in the iterator.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local count = iter({ a = 1, b = 2, c = 3, 4, 5, 6 }).count()
 
@@ -316,7 +312,7 @@ print(count)
 Get minimal item in the iterator.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local min = iter({ a = 1, b = 2, c = 3, 4, 5, 6 }).min()
 
@@ -329,7 +325,7 @@ print(min)
 Get maximal item in the iterator.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local max = iter({ a = 1, b = 2, c = 3, 4, 5, 6 }).max()
 
@@ -342,7 +338,7 @@ print(max)
 Sum all the items in the iterator.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local sum = iter({ a = 1, b = 2, c = 3, 4, 5, 6 }).sum()
 
@@ -355,7 +351,7 @@ print(sum)
 Skip first `n` items from the iterator.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 -- [3] = 3
 -- [4] = 4
@@ -370,7 +366,7 @@ end
 Take first `len` items from the iterator.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 -- [1] = 1
 -- [2] = 2
@@ -391,7 +387,7 @@ end
 Convert iterator back to a lua table.
 
 ```luau
-local iter = import("iterable")
+local iter = load("iterable").value
 
 local items = { a = 1, b = 2, c = 3, 4, 5, 6 }
 
@@ -399,4 +395,4 @@ local items = { a = 1, b = 2, c = 3, 4, 5, 6 }
 print(iter(items).collect() == items)
 ```
 
-Licensed under [GPL-3.0](../../LICENSE).
+Licensed under [GPL-3.0-or-later](../../LICENSE).

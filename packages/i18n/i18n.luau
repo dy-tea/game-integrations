@@ -1,4 +1,4 @@
--- i18n v1.0.2
+-- i18n v1.1.0
 -- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -18,7 +18,7 @@ local locales_cache = nil
 
 local function get_translations(name: string): { [string]: string }?
     if not locales_cache then
-        local locales = fs.read_file(import("locales"))
+        local locales = fs.read_file(load("locales").value)
 
         locales_cache = str.decode(str.from_bytes(locales), "toml")
     end

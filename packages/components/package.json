@@ -1,29 +1,16 @@
 {
-    "standard": 1,
-    "package": {
-        "maintainers": [
-            "Nikita Podvirnyi <krypt0nn@vk.com>"
-        ]
-    },
+    "version": 1,
     "inputs": {
+        "import": "http://127.0.0.1:8080/packages/import/import.luau",
         "iterable": "http://127.0.0.1:8080/packages/iterable/iterable.luau",
         "i18n": "http://127.0.0.1:8080/packages/i18n/package.json",
         "wine-staging-tkg-src": "wine/wine-staging-tkg.json",
         "dxvk-src": "dxvk/dxvk.json",
         "dxvk-gplasync-src": "dxvk/dxvk-gplasync.json",
-        "wine": {
-            "uri": "wine.luau",
-            "format": "module/v1"
-        },
-        "dxvk": {
-            "uri": "dxvk.luau",
-            "format": "module/v1"
-        }
+        "wine": "wine.luau",
+        "dxvk": "dxvk.luau"
     },
     "outputs": {
-        "components": {
-            "uri": "components.luau",
-            "format": "module/v1"
-        }
+        "components": "components.luau"
     }
 }

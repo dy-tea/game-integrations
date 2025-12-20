@@ -1,4 +1,4 @@
--- components v0.0.0
+-- components v0.1.0
 -- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -15,6 +15,10 @@
 -- along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 --!nocheck
+
+function import(...)
+    return (load("import").value)(...)
+end
 
 type Settings = {
     wine: {
@@ -65,9 +69,8 @@ local dxvk_dir_path: string        = path.join(data_dir_path, "dxvk")
 
 ------------------------------------------------- Imports -------------------------------------------------
 
--- Since inputs of a package can't access other inputs
--- of the same package here we implicitly feed them
--- with all the necessary info.
+-- Since inputs of a package can't access other inputs of the same package here
+-- we implicitly feed them with all the necessary info.
 
 local function import_wine()
     return import("wine")({
@@ -193,7 +196,7 @@ return function(options: Options)
             .find(function(version) return version.name == settings.wine.selected end)
 
         if not selected_wine then
-            error("Failed to find selected wine version")
+            error("failed to find selected wine version")
         end
 
         local selected_dxvk = iter(dxvk.versions.list())
@@ -202,7 +205,7 @@ return function(options: Options)
             .find(function(version) return version.name == settings.dxvk.selected end)
 
         if not selected_dxvk then
-            error("Failed to find selected dxvk version")
+            error("failed to find selected dxvk version")
         end
 
         local wine_data_path: string   = path.join(wine_dir_path, settings.wine.selected)
@@ -238,20 +241,18 @@ return function(options: Options)
 
                             on_update = function(current: number, total: number)
                                 updater({
-                                    progress = {
-                                        current = current,
-                                        total = total,
+                                    current = current,
+                                    total = total,
 
-                                        format = function()
-                                            local current = current / 1000 / 1000 / 1000
-                                            local total = total / 1000 / 1000 / 1000
+                                    format = function()
+                                        local current = current / 1000 / 1000 / 1000
+                                        local total = total / 1000 / 1000 / 1000
 
-                                            return i18n("downloading_progress", {
-                                                current = math.floor(current * 100) / 100,
-                                                total = math.floor(total * 100) / 100
-                                            })
-                                        end
-                                    }
+                                        return i18n("downloading_progress", {
+                                            current = math.floor(current * 100) / 100,
+                                            total = math.floor(total * 100) / 100
+                                        })
+                                    end
                                 })
                             end
                         })
@@ -272,20 +273,18 @@ return function(options: Options)
                         -- every wine build archive to contain a parent folder inside.
                         archive.extract(handle, wine_dir_path, function(current: number, total: number)
                             updater({
-                                progress = {
-                                    current = current,
-                                    total = total,
+                                current = current,
+                                total = total,
 
-                                    format = function()
-                                        local current = current / 1000 / 1000 / 1000
-                                        local total = total / 1000 / 1000 / 1000
+                                format = function()
+                                    local current = current / 1000 / 1000 / 1000
+                                    local total = total / 1000 / 1000 / 1000
 
-                                        return i18n("extraction_progress", {
-                                            current = math.floor(current * 100) / 100,
-                                            total = math.floor(total * 100) / 100
-                                        })
-                                    end
-                                }
+                                    return i18n("extraction_progress", {
+                                        current = math.floor(current * 100) / 100,
+                                        total = math.floor(total * 100) / 100
+                                    })
+                                end
                             })
                         end)
 
@@ -320,20 +319,18 @@ return function(options: Options)
 
                             progress = function(current: number, total: number)
                                 updater({
-                                    progress = {
-                                        current = current,
-                                        total = total,
+                                    current = current,
+                                    total = total,
 
-                                        format = function()
-                                            local current = current / 1000 / 1000 / 1000
-                                            local total = total / 1000 / 1000 / 1000
+                                    format = function()
+                                        local current = current / 1000 / 1000 / 1000
+                                        local total = total / 1000 / 1000 / 1000
 
-                                            return i18n("downloading_progress", {
-                                                current = math.floor(current * 100) / 100,
-                                                total = math.floor(total * 100) / 100
-                                            })
-                                        end
-                                    }
+                                        return i18n("downloading_progress", {
+                                            current = math.floor(current * 100) / 100,
+                                            total = math.floor(total * 100) / 100
+                                        })
+                                    end
                                 })
                             end
                         })
@@ -354,20 +351,18 @@ return function(options: Options)
                         -- every dxvk build archive to contain a parent folder inside.
                         archive.extract(handle, dxvk_dir_path, function(current: number, total: number)
                             updater({
-                                progress = {
-                                    current = current,
-                                    total = total,
+                                current = current,
+                                total = total,
 
-                                    format = function()
-                                        local current = current / 1000 / 1000 / 1000
-                                        local total = total / 1000 / 1000 / 1000
+                                format = function()
+                                    local current = current / 1000 / 1000 / 1000
+                                    local total = total / 1000 / 1000 / 1000
 
-                                        return i18n("extraction_progress", {
-                                            current = math.floor(current * 100) / 100,
-                                            total = math.floor(total * 100) / 100
-                                        })
-                                    end
-                                }
+                                    return i18n("extraction_progress", {
+                                        current = math.floor(current * 100) / 100,
+                                        total = math.floor(total * 100) / 100
+                                    })
+                                end
                             })
                         end)
 
@@ -392,15 +387,7 @@ return function(options: Options)
 
     return {
         game = {
-            get_status = function(variant: GameVariant): string?
-                if not get_runner_diff_pipeline(variant) then
-                    return nil
-                end
-
-                return "update-required"
-            end,
-
-            get_diff = function(variant: GameVariant)
+            get_actions_pipeline = function(variant: GameVariant)
                 return get_runner_diff_pipeline(variant)
             end,
 

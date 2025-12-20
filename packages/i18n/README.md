@@ -1,4 +1,4 @@
-# i18n v1.0.2
+# i18n v1.1.0
 
 Centralized place for common strings localization. Recommended to be used by
 other packages to allow remote translation updates.
@@ -13,7 +13,7 @@ Add `i18n` package to your integration package inputs:
 
 ```json
 {
-    "standard": 1,
+    "version": 1,
     "inputs": {
         "i18n": "http://127.0.0.1:8080/packages/i18n/package.json"
     }
@@ -24,7 +24,7 @@ Import the package in your integration module:
 
 ```lua
 -- Import the i18n library
-local i18n = import("i18n").i18n
+local i18n = load("i18n").value.i18n
 ```
 
 Provide `LoclizableString` translations for strings from the `locales.toml` file:
@@ -32,7 +32,7 @@ Provide `LoclizableString` translations for strings from the `locales.toml` file
 ```lua
 return {
     -- Simple translation
-    title = i18n("download") or "Download",
+    title = i18n("download"),
 
     -- Translation with options
     format = function(curr, total, diff)
@@ -44,4 +44,4 @@ return {
 }
 ```
 
-Module and translations are licensed under [GPL-3.0](../../LICENSE).
+Module and translations are licensed under [GPL-3.0-or-later](../../LICENSE).
