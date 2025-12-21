@@ -140,7 +140,10 @@ return function(imports)
     -- Basically adds `wine` to the beginning of the command and merges
     -- environment variables.
     local function wrap_launch_command(name: string, prefix: string, command: LaunchCommand): LaunchCommand
-        if not path.accessible(prefix) then
+        local is_new_api = not path.accessible
+
+        -- TODO: remove old API after beta 2 release
+        if (is_new_api and not path.permissions(prefix).write) or (not is_new_api and not path.accessible(prefix)) then
             error(`you are not allowed to create wine prefix in '{prefix}'`)
         end
 
