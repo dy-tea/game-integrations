@@ -13,7 +13,9 @@
         "downloader",
         "archive",
         "hash",
+        "compression",
         "sqlite",
+        "portal",
         "process"
     ]
 }
