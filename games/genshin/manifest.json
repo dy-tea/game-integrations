@@ -1,7 +1,7 @@
 {
     "standard": 1,
     "game": {
-        "title": "Genshin Impact [local]",
+        "title": "Genshin Impact",
         "description": {
             "en": "WIP implementation used for testing",
             "ru": "Реализация пакета, используемая для тестов"
@@ -9,29 +9,21 @@
         "developer": "HoYoverse",
         "publisher": "COGNOSPHERE",
         "images": {
-            "icon": "http://127.0.0.1:8080/games/genshin/icon.jpg",
-            "poster": "http://127.0.0.1:8080/games/genshin/poster.jpg",
-            "background": "http://127.0.0.1:8080/games/genshin/background.jpg",
+            "icon": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/genshin/icon.jpg",
+            "poster": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/genshin/poster.jpg",
+            "background": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/genshin/background.jpg",
             "slides": [
-                "http://127.0.0.1:8080/games/genshin/slide1.jpg"
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/genshin/slide1.jpg"
             ]
-        }
-    },
-    "package": {
-        "url": "http://127.0.0.1:8080/games/genshin/package.json",
-        "output": "integration",
-        "runtime": {
-            "platforms": [
-                "x86_64-linux"
-            ]
-        }
-    },
-    "info": {
+        },
         "tags": [
             "gambling",
             "payments",
-            "anti-cheat",
-            "unsupported-platform"
+            "anti-cheat"
         ]
+    },
+    "package": {
+        "url": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/genshin/package.json",
+        "output": "integration"
     }
 }

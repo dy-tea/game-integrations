@@ -7,7 +7,7 @@
         }
     ],
     "game": {
-        "title": "Voices of the Void [local]",
+        "title": "Voices of the Void",
         "description": {
             "en": "You work as a scientist in the isolated research lab in the mountains of Switzerland. Your task is to gather signals from space, analyze them, process them and sell them to get points. You can get regular signals and objects like dwarf planets and stars, or you can get something \"unusual\" or even \"strange\" and \"unexplainable\".",
             "ru": "Вы работаете ученым в изолированной исследовательской лаборатории в горах Швейцарии. Ваша задача - собирать сигналы из космоса, анализировать их, обрабатывать и продавать, чтобы заработать очки. Вы можете получать обычные сигналы и объекты, такие как карликовые планеты и звезды, или вы можете получить что-то \"необычное\" или даже \"странное\" и \"необъяснимое\"."
@@ -25,10 +25,7 @@
                 "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/slide4.png",
                 "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/slide5.png"
             ]
-        },
-        "tags": [
-            "workarounds"
-        ]
+        }
     },
     "package": {
         "url": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/votv/package.json",
