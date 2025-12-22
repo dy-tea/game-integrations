@@ -1,6 +1,6 @@
 {
     "4s6fc038nugn0": {
-        "allow_api": {
+        "api": {
             "process": true
         }
     }
