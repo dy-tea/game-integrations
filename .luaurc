@@ -2,9 +2,11 @@
     "languageMode": "strict",
     "globals": [
         "versions",
+
         "load",
         "clone",
         "dbg",
+        "sleep",
 
         "str",
         "path",
@@ -15,6 +17,7 @@
         "hash",
         "compression",
         "sqlite",
+        "torrent",
         "portal",
         "process"
     ]
