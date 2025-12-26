@@ -1,4 +1,4 @@
--- protobuf v0.1.0
+-- protobuf v0.1.1
 -- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -132,6 +132,18 @@ return {
 
     -- Encode protobuf message.
     encode = function(platform: string, options: EncodeOptions): { number }
+        if not options.protobuf then
+            error("protobuf path is not provided")
+        end
+
+        if not options.type then
+            error("protobuf encode type is not provided")
+        end
+
+        if not options.input then
+            error("protobuf encode input is not provided")
+        end
+
         local proto_path = options.proto_path or path.parent(options.protobuf)
 
         if not check_read_permissions(options.protobuf) then
@@ -144,7 +156,7 @@ return {
 
         local input = {}
 
-        if typeof(input) == "string" then
+        if typeof(options.input) == "string" then
             if fs.exists(options.input) then
                 input = fs.read_file(options.input)
             else
@@ -173,6 +185,18 @@ return {
 
     -- Decode protobuf message.
     decode = function(platform: string, options: DecodeOptions): { number }
+        if not options.protobuf then
+            error("protobuf path is not provided")
+        end
+
+        if not options.type then
+            error("protobuf decode type is not provided")
+        end
+
+        if not options.input then
+            error("protobuf decode input is not provided")
+        end
+
         local proto_path = options.proto_path or path.parent(options.protobuf)
 
         if not check_read_permissions(options.protobuf) then
@@ -185,7 +209,7 @@ return {
 
         local input = {}
 
-        if typeof(input) == "string" then
+        if typeof(options.input) == "string" then
             if fs.exists(options.input) then
                 input = fs.read_file(options.input)
             else
