@@ -149,7 +149,7 @@ local function deserialize(value: string): any
 end
 
 local settings_path: string = path.join(path.persist_dir("settings"), "settings.db")
-local settings_handle: number = sqlite.open(settings_path):await()
+local settings_handle: number = sqlite.open(settings_path)
 
 sqlite.batch(settings_handle, [[
     CREATE TABLE IF NOT EXISTS settings (
