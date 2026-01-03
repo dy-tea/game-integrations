@@ -1,4 +1,4 @@
-# Settings v0.1.0
+# Settings v0.1.1
 
 A general library for managing game integration settings. Helps to construct
 game settings layout and handles properties storing in a shared SQLite database.
@@ -9,7 +9,7 @@ Add settings module to your package inputs:
 
 ```json
 {
-    "version": 1,
+    "format": 1,
     "inputs": {
         "settings": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/settings/settings.luau"
     }

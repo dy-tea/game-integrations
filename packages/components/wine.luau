@@ -1,5 +1,5 @@
--- components/wine v0.1.0
--- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
+-- components/wine v0.1.1
+-- Copyright (C) 2025 - 2026  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -104,7 +104,7 @@ return function(imports)
             end
         end
 
-        return process.exec(wine_path, args, env)
+        return process.exec(wine_path, args, env):await()
     end
 
     -- Check if provided folder contains a valid wine prefix.
@@ -121,7 +121,7 @@ return function(imports)
         local result = run(name, { "wineboot" }, { WINEPREFIX = prefix })
 
         if result.is_ok and is_valid_prefix(prefix) then
-            fs.write_file(path.join(prefix, ".wine"), name)
+            fs.write_file(path.join(prefix, ".wine"), name):await()
         end
     end
 
@@ -133,7 +133,7 @@ return function(imports)
             return nil
         end
 
-        return str.from_bytes(fs.read_file(path))
+        return str.from_bytes(fs.read_file(path):await())
     end
 
     -- Wrap provided launch command with selected wine version and prefix path.

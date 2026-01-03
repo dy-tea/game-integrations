@@ -1,5 +1,5 @@
--- components v0.1.0
--- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
+-- components v0.1.1
+-- Copyright (C) 2025 - 2026  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -72,17 +72,28 @@ local dxvk_dir_path: string        = path.join(data_dir_path, "dxvk")
 -- Since inputs of a package can't access other inputs of the same package here
 -- we implicitly feed them with all the necessary info.
 
+local __import_wine = nil
+local __import_dxvk = nil
+
 local function import_wine()
-    return import("wine")({
-        wine_staging_tkg = fs.read_file(import("wine-staging-tkg-src"))
-    })
+    if not __import_wine then
+        __import_wine = {
+            wine_staging_tkg = fs.read_file(import("wine-staging-tkg-src")):await()
+        }
+    end
+
+    return import("wine")(clone(__import_wine))
 end
 
 local function import_dxvk()
-    return import("dxvk")({
-        dxvk = fs.read_file(import("dxvk-src")),
-        dxvk_gplasync = fs.read_file(import("dxvk-gplasync-src"))
-    })
+    if not __import_dxvk then
+        __import_dxvk = {
+            dxvk = fs.read_file(import("dxvk-src")):await(),
+            dxvk_gplasync = fs.read_file(import("dxvk-gplasync-src")):await()
+        }
+    end
+
+    return import("dxvk")(clone(__import_dxvk))
 end
 
 ------------------------------------------------- Module -------------------------------------------------
@@ -300,7 +311,7 @@ return function(options: Options)
                     before = function() return should_update_prefix end,
 
                     perform = function(updater)
-                        fs.create_dir(wine_prefix_path)
+                        fs.create_dir(wine_prefix_path):await()
 
                         wine.prefix.update(settings.wine.selected, wine_prefix_path)
                     end
@@ -368,7 +379,7 @@ return function(options: Options)
 
                         archive.close(handle)
 
-                        fs.remove(dxvk_download_output)
+                        fs.remove(dxvk_download_output):await()
                     end
                 },
 

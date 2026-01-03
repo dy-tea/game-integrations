@@ -1,5 +1,5 @@
--- components/dxvk v0.1.0
--- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
+-- components/dxvk v0.1.1
+-- Copyright (C) 2025 - 2026  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -84,19 +84,22 @@ return function(imports)
             error(`can't install dxvk to invalid wine prefix system32 folder: '{system32_dir_path}'`)
         end
 
-        for _, entry in fs.read_dir(dxvk_arch_dir_path) do
+        for _, entry in fs.read_dir(dxvk_arch_dir_path):await() do
             if entry.type == "file" and string.match(entry.name, ".+%.dll") then
                 local prefix_file_path = path.join(system32_dir_path, entry.name)
 
                 if fs.exists(prefix_file_path) then
-                    fs.remove(prefix_file_path)
+                    fs.remove(prefix_file_path):await()
                 end
 
-                fs.move(entry.path, prefix_file_path)
+                fs.move(entry.path, prefix_file_path):await()
             end
         end
 
-        fs.write_file(path.join(prefix, ".dxvk"), str.encode({ name = name, arch = arch }, "json"))
+        fs.write_file(
+            path.join(prefix, ".dxvk"),
+            str.encode({ name = name, arch = arch }, "json")
+        ):await()
     end
 
     -- Read name and arch of the dxvk version applied to the prefix.
@@ -107,7 +110,7 @@ return function(imports)
             return nil
         end
 
-        return str.decode(str.from_bytes(fs.read_file(path)), "json")
+        return str.decode(str.from_bytes(fs.read_file(path):await()), "json")
     end
 
     -- Wrap provided launch command with selected wine version name.

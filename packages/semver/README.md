@@ -8,7 +8,7 @@ Add semver module to your package inputs:
 
 ```json
 {
-    "standard": 1,
+    "format": 1,
     "inputs": {
         "semver": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/semver/semver.luau"
     }
@@ -46,4 +46,4 @@ print(a == b) -- false
 print(a <= b) -- true
 ```
 
-Licensed under [GPL-3.0](../../LICENSE).
+Licensed under [GPL-3.0-or-later](../../LICENSE).

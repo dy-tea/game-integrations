@@ -1,5 +1,5 @@
--- VOTV integration v0.1.0
--- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
+-- VotV integration v0.1.0
+-- Copyright (C) 2025 - 2026  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -126,11 +126,11 @@ local function get_game_version(): string?
         return nil
     end
 
-    return str.from_bytes(fs.read_file(game_version_path))
+    return str.from_bytes(fs.read_file(game_version_path):await())
 end
 
 local function set_game_version(version: string)
-    fs.write_file(game_version_path, str.to_bytes(version))
+    fs.write_file(game_version_path, str.to_bytes(version)):await()
 end
 
 local function is_game_installed(): boolean
@@ -147,76 +147,104 @@ end
 
 ------------------------------------------------- Module -------------------------------------------------
 
-return {
-    version = 1,
+return function()
+    return {
+        game = {
+            get_launch_info = function(variant: Variant)
+                if not is_game_installed() then
+                    return nil
+                end
 
-    game = {
-        get_launch_info = function(variant: Variant)
-            if not is_game_installed() then
-                return nil
-            end
+                local components = import_components()
 
-            local components = import_components()
+                return components.game.wrap_launch_info({
+                    binary = game_binary_path
+                })
+            end,
 
-            return components.game.wrap_launch_info({
-                binary = game_binary_path
-            })
-        end,
+            get_actions_pipeline = function(variant: Variant)
+                local settings = import_settings()
+                local components = import_components()
 
-        get_actions_pipeline = function(variant: Variant)
-            local settings = import_settings()
-            local components = import_components()
+                local pipeline = components.game.get_actions_pipeline(variant)
 
-            local pipeline = components.game.get_actions_pipeline(variant)
+                if pipeline then
+                    return pipeline
+                end
 
-            if pipeline then
-                return pipeline
-            end
+                if is_game_installed() then
+                    return nil
+                end
 
-            if is_game_installed() then
-                return nil
-            end
+                local selected_game_version = settings.get_property("game.version")
 
-            local selected_game_version = settings.get_property("game.version")
+                local info = get_game_version_info(selected_game_version)
 
-            local info = get_game_version_info(selected_game_version)
+                if not info then
+                    error(`invalid game version selected: {selected_game_version}`)
+                end
 
-            if not info then
-                error(`invalid game version selected: {selected_game_version}`)
-            end
+                local i18n = import("i18n").i18n
 
-            local i18n = import("i18n").i18n
+                local archive_path: string = path.join(path.temp_dir(), `votv_{info.version}.7z`)
 
-            local archive_path: string = path.join(path.temp_dir(), `votv_{info.version}.7z`)
+                return {
+                    title = i18n("install_game"),
 
-            return {
-                title = i18n("install_game"),
+                    pipeline = {
+                        {
+                            title = i18n("delete_old_files"),
 
-                pipeline = {
-                    {
-                        title = i18n("delete_old_files"),
+                            before = function()
+                                return fs.exists(game_dir_path)
+                            end,
 
-                        before = function()
-                            return fs.exists(game_dir_path)
-                        end,
+                            perform = function()
+                                fs.remove_dir(game_dir_path):await()
+                            end
+                        },
 
-                        perform = function()
-                            fs.remove_dir(game_dir_path)
-                        end
-                    },
+                        {
+                            title = i18n("download_game_files"),
 
-                    {
-                        title = i18n("download_game_files"),
+                            perform = function(updater)
+                                local downloader_handle = downloader.create()
 
-                        perform = function(updater)
-                            local downloader_handle = downloader.create()
+                                local task_handle = downloader.download(downloader_handle, {
+                                    url = info.url,
+                                    output_file = archive_path,
+                                    continue_download = true,
 
-                            local task_handle = downloader.download(downloader_handle, {
-                                url = info.url,
-                                output_file = archive_path,
-                                continue_download = true,
+                                    on_update = function(current: number, total: number)
+                                        updater({
+                                            current = current,
+                                            total = total,
 
-                                on_update = function(current: number, total: number)
+                                            format = function()
+                                                local current = current / 1000 / 1000 / 1000
+                                                local total = total / 1000 / 1000 / 1000
+
+                                                return i18n("downloading_progress", {
+                                                    current = math.floor(current * 100) / 100,
+                                                    total = math.floor(total * 100) / 100
+                                                })
+                                            end
+                                        })
+                                    end
+                                })
+
+                                downloader.wait(task_handle)
+                                downloader.close(downloader_handle)
+                            end
+                        },
+
+                        {
+                            title = i18n("extract_game_files"),
+
+                            perform = function(updater)
+                                local handle: number = archive.open(archive_path, "7z")
+
+                                archive.extract(handle, data_dir_path, function(current: number, total: number)
                                     updater({
                                         current = current,
                                         total = total,
@@ -225,79 +253,52 @@ return {
                                             local current = current / 1000 / 1000 / 1000
                                             local total = total / 1000 / 1000 / 1000
 
-                                            return i18n("downloading_progress", {
+                                            return i18n("extraction_progress", {
                                                 current = math.floor(current * 100) / 100,
                                                 total = math.floor(total * 100) / 100
                                             })
                                         end
                                     })
-                                end
-                            })
+                                end)
 
-                            downloader.wait(task_handle)
-                            downloader.close(downloader_handle)
-                        end
-                    },
+                                archive.close(handle)
 
-                    {
-                        title = i18n("extract_game_files"),
+                                fs.move(path.join(data_dir_path, info.version, "WindowsNoEditor"), game_dir_path):await()
 
-                        perform = function(updater)
-                            local handle: number = archive.open(archive_path)
+                                fs.remove(path.join(data_dir_path, info.version)):await()
+                                fs.remove(archive_path):await()
 
-                            archive.extract(handle, data_dir_path, function(current: number, total: number)
-                                updater({
-                                    current = current,
-                                    total = total,
-
-                                    format = function()
-                                        local current = current / 1000 / 1000 / 1000
-                                        local total = total / 1000 / 1000 / 1000
-
-                                        return i18n("extraction_progress", {
-                                            current = math.floor(current * 100) / 100,
-                                            total = math.floor(total * 100) / 100
-                                        })
-                                    end
-                                })
-                            end)
-
-                            archive.close(handle)
-
-                            fs.move(path.join(data_dir_path, info.version, "WindowsNoEditor"), game_dir_path)
-                            fs.remove(path.join(data_dir_path, info.version))
-                            fs.remove(archive_path)
-
-                            set_game_version(info.version)
-                        end
+                                set_game_version(info.version)
+                            end
+                        }
                     }
                 }
-            }
-        end,
-    },
+            end,
+        },
 
-    settings = {
-        get_property = function(name: string): any
-            local settings = import_settings()
+        settings = {
+            get_property = function(name: string): any
+                local settings = import_settings()
 
-            return settings.get_property(name)
-        end,
+                return settings.get_property(name)
+            end,
 
-        set_property = function(name: string, value: any)
-            local settings = import_settings()
+            set_property = function(name: string, value: any)
+                local settings = import_settings()
 
-            settings.set_property(name, value)
-        end,
+                settings.set_property(name, value)
+            end,
 
-        get_layout = function(variant: Variant)
-            local iter = import("iterable")
+            get_layout = function(variant: Variant)
+                local iter = import("iterable")
 
-            local settings = import_settings()
-            local components = import_components()
+                local settings = import_settings()
+                local components = import_components()
 
-            return iter(settings.get_layout(variant))
-                .chain(components.settings.get_layout())
-                .collect()
-        end
+                return iter(settings.get_layout(variant))
+                    .chain(components.settings.get_layout())
+                    .collect()
+            end
+        }
     }
-}
+end

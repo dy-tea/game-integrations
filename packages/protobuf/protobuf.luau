@@ -1,5 +1,5 @@
--- protobuf v0.1.1
--- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
+-- protobuf v0.1.2
+-- Copyright (C) 2025 - 2026  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@ if not process then
 end
 
 local function calc_file_hash(path: string): string
-    local file_hash = hash.digitize_file("seahash", path)
+    local file_hash = hash.digitize_file("seahash", path):await()
 
     return str.encode(file_hash, "base32/nopad")
 end
@@ -121,13 +121,13 @@ return {
         end
 
         if fs.exists(binary_path) then
-            fs.remove_file(binary_path)
+            fs.remove_file(binary_path):await()
         end
 
-        fs.move(archive_binary_path, binary_path)
+        fs.move(archive_binary_path, binary_path):await()
 
-        fs.remove_file(temp_archive_path)
-        fs.remove_dir(temp_archive_extract_path)
+        fs.remove_file(temp_archive_path):await()
+        fs.remove_dir(temp_archive_extract_path):await()
     end,
 
     -- Encode protobuf message.
@@ -158,7 +158,7 @@ return {
 
         if typeof(options.input) == "string" then
             if fs.exists(options.input) then
-                input = fs.read_file(options.input)
+                input = fs.read_file(options.input):await()
             else
                 input = str.to_bytes(input)
             end
@@ -211,7 +211,7 @@ return {
 
         if typeof(options.input) == "string" then
             if fs.exists(options.input) then
-                input = fs.read_file(options.input)
+                input = fs.read_file(options.input):await()
             else
                 input = str.to_bytes(input)
             end

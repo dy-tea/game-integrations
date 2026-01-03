@@ -1,4 +1,4 @@
-# i18n v1.1.0
+# i18n v1.1.1
 
 Centralized place for common strings localization. Recommended to be used by
 other packages to allow remote translation updates.
@@ -13,7 +13,7 @@ Add `i18n` package to your integration package inputs:
 
 ```json
 {
-    "version": 1,
+    "format": 1,
     "inputs": {
         "i18n": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/i18n/package.json"
     }

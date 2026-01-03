@@ -1,5 +1,5 @@
--- settings v0.1.0
--- Copyright (C) 2025  Nikita Podvirnyi <krypt0nn@vk.com>
+-- settings v0.1.1
+-- Copyright (C) 2025 - 2026  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
 -- it under the terms of the GNU General Public License as published by
@@ -148,9 +148,10 @@ local function deserialize(value: string): any
     end
 end
 
-local settings: number = sqlite.open(path.join(path.persist_dir("settings"), "settings.db"))
+local settings_path: string = path.join(path.persist_dir("settings"), "settings.db")
+local settings_handle: number = sqlite.open(settings_path):await()
 
-sqlite.batch(settings, [[
+sqlite.batch(settings_handle, [[
     CREATE TABLE IF NOT EXISTS settings (
         game  TEXT NOT NULL,
         key   TEXT NOT NULL,
@@ -160,10 +161,14 @@ sqlite.batch(settings, [[
     );
 
     PRAGMA optimize;
-]])
+]]):await()
 
 local function get_raw_property(game: string, key: string): any
-    local value: { string }? = sqlite.query_row(settings, "SELECT value FROM settings WHERE game = ?1 AND key = ?2", { game, key })
+    local value: { string }? = sqlite.query_row(
+        settings_handle,
+        "SELECT value FROM settings WHERE game = ?1 AND key = ?2",
+        { game, key }
+    ):await()
 
     if not value then
         return nil
@@ -176,9 +181,17 @@ local function set_raw_property(game: string, key: string, value: any)
     value = serialize(value)
 
     if not value then
-        sqlite.execute(settings, "DELETE FROM settings WHERE game = ?1 AND key = ?2", { game, key })
+        sqlite.exec(
+            settings_handle,
+            "DELETE FROM settings WHERE game = ?1 AND key = ?2",
+            { game, key }
+        ):await()
     else
-        sqlite.execute(settings, "INSERT OR REPLACE INTO settings (game, key, value) VALUES (?1, ?2, ?3)", { game, key, value })
+        sqlite.exec(
+            settings_handle,
+            "INSERT OR REPLACE INTO settings (game, key, value) VALUES (?1, ?2, ?3)",
+            { game, key, value }
+        ):await()
     end
 end
 
