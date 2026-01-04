@@ -1,15 +1,21 @@
 {
     "languageMode": "strict",
     "globals": [
+        "Bytes",
+        "Promise",
+
         "versions",
 
         "load",
         "clone",
         "dbg",
         "sleep",
+        "await",
 
         "str",
         "path",
+        "task",
+        "system",
         "fs",
         "net",
         "downloader",
