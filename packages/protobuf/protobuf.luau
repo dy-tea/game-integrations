@@ -1,4 +1,4 @@
--- protobuf v0.1.2
+-- protobuf v0.1.3
 -- Copyright (C) 2025 - 2026  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -48,7 +48,7 @@ end
 local function calc_file_hash(path: string): string
     local file_hash = hash.digitize_file("seahash", path):await()
 
-    return str.encode(file_hash, "base32/nopad")
+    return str.encode("base32/nopad", file_hash)
 end
 
 local function check_read_permissions(fs_path: string): boolean
@@ -84,6 +84,10 @@ return {
 
         if not download_info[platform] then
             error(`Platform '{platform}' is not supported by the protobuf library`)
+        end
+
+        if not fs.exists(data_folder) then
+            fs.create_dir(data_folder):await()
         end
 
         local temp_archive_path = path.join(path.temp_dir(), `{platform}-protobuf.zip`)

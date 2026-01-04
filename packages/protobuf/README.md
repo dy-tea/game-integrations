@@ -1,4 +1,4 @@
-# Protobuf v0.1.2
+# Protobuf v0.1.3
 
 Wrapper of a `protoc` binary which allows you to encode and decode protobuf
 messages.
