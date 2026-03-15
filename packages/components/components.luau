@@ -1,4 +1,4 @@
--- components v0.1.1
+-- components v0.1.2
 -- Copyright (C) 2025 - 2026  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -256,10 +256,10 @@ return function(options: Options)
                                     total = total,
 
                                     format = function()
-                                        local current = current / 1000 / 1000 / 1000
-                                        local total = total / 1000 / 1000 / 1000
+                                        local current = current / 1000 / 1000
+                                        local total = total / 1000 / 1000
 
-                                        return i18n("downloading_progress", {
+                                        return i18n("downloading_progress_mb", {
                                             current = math.floor(current * 100) / 100,
                                             total = math.floor(total * 100) / 100
                                         })
@@ -288,10 +288,10 @@ return function(options: Options)
                                 total = total,
 
                                 format = function()
-                                    local current = current / 1000 / 1000 / 1000
-                                    local total = total / 1000 / 1000 / 1000
+                                    local current = current / 1000 / 1000
+                                    local total = total / 1000 / 1000
 
-                                    return i18n("extraction_progress", {
+                                    return i18n("extraction_progress_mb", {
                                         current = math.floor(current * 100) / 100,
                                         total = math.floor(total * 100) / 100
                                     })
@@ -334,10 +334,10 @@ return function(options: Options)
                                     total = total,
 
                                     format = function()
-                                        local current = current / 1000 / 1000 / 1000
-                                        local total = total / 1000 / 1000 / 1000
+                                        local current = current / 1000 / 1000
+                                        local total = total / 1000 / 1000
 
-                                        return i18n("downloading_progress", {
+                                        return i18n("downloading_progress_mb", {
                                             current = math.floor(current * 100) / 100,
                                             total = math.floor(total * 100) / 100
                                         })
@@ -366,10 +366,10 @@ return function(options: Options)
                                 total = total,
 
                                 format = function()
-                                    local current = current / 1000 / 1000 / 1000
-                                    local total = total / 1000 / 1000 / 1000
+                                    local current = current / 1000 / 1000
+                                    local total = total / 1000 / 1000
 
-                                    return i18n("extraction_progress", {
+                                    return i18n("extraction_progress_mb", {
                                         current = math.floor(current * 100) / 100,
                                         total = math.floor(total * 100) / 100
                                     })
