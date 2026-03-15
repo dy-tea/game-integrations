@@ -164,19 +164,27 @@ ru = "Завершить установку файлов игры"
 en = "Finish installation of audio package: {language}"
 ru = "Завершить установку пакета аудио: {language}"
 
-[downloading_progress]
+[downloading_progress_mb]
+en = "Downloaded {current} MB / {total} MB"
+ru = "Загружено {current} МБ / {total} МБ"
+
+[downloading_progress_gb]
 en = "Downloaded {current} GB / {total} GB"
 ru = "Загружено {current} ГБ / {total} ГБ"
 
-[extraction_progress]
+[extraction_progress_mb]
+en = "Extracted {current} MB / {total} MB"
+ru = "Распаковано {current} МБ / {total} МБ"
+
+[extraction_progress_gb]
 en = "Extracted {current} GB / {total} GB"
 ru = "Распаковано {current} ГБ / {total} ГБ"
 
-[repairing_progress]
+[repairing_progress_gb]
 en = "Repairing {current} GB / {total} GB"
 ru = "Исправление {current} ГБ / {total} ГБ"
 
-[hashing_progress]
+[hashing_progress_gb]
 en = "Hashing {current} GB / {total} GB"
 ru = "Вычисление хэшей {current} ГБ / {total} ГБ"
 
