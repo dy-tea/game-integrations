@@ -1,4 +1,4 @@
--- components/dxvk v0.1.1
+-- components/dxvk v0.1.2
 -- Copyright (C) 2025 - 2026  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ return function(imports)
                 table.insert(dxvk_versions_cache, {
                     name = group.name,
                     title = group.title,
-                    versions = str.decode(str.from_bytes(group.src), "json")
+                    versions = str.decode("json", str.from_bytes(group.src))
                 })
             end
         end
@@ -98,7 +98,7 @@ return function(imports)
 
         fs.write_file(
             path.join(prefix, ".dxvk"),
-            str.encode({ name = name, arch = arch }, "json")
+            str.encode("json", { name = name, arch = arch })
         ):await()
     end
 
@@ -110,7 +110,7 @@ return function(imports)
             return nil
         end
 
-        return str.decode(str.from_bytes(fs.read_file(path):await()), "json")
+        return str.decode("json", str.from_bytes(fs.read_file(path):await()))
     end
 
     -- Wrap provided launch command with selected wine version name.

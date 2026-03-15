@@ -1,4 +1,4 @@
--- components/wine v0.1.1
+-- components/wine v0.1.2
 -- Copyright (C) 2025 - 2026  Nikita Podvirnyi <krypt0nn@vk.com>
 --
 -- This program is free software: you can redistribute it and/or modify
@@ -56,7 +56,7 @@ return function(imports)
                 table.insert(wine_versions_cache, {
                     name = group.name,
                     title = group.title,
-                    versions = str.decode(str.from_bytes(group.src), "json")
+                    versions = str.decode("json", str.from_bytes(group.src))
                 })
             end
         end
