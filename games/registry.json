@@ -2,7 +2,7 @@
     "format": 1,
     "games": [
         {
-            "url": "https://github.com/an-anime-team/game-integrations/blob/master/games/votv/manifest.json",
+            "url": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/games/votv/manifest.json",
             "featured": true
         }
     ]
