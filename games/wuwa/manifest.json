@@ -9,15 +9,15 @@
         "developer": "KURO GAMES",
         "publisher": "KURO GAMES",
         "images": {
-            "icon": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/icon.jpg",
-            "poster": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/poster.jpg",
-            "background": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/background.png",
+            "icon": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/games/wuwa/icon.jpg",
+            "poster": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/games/wuwa/poster.jpg",
+            "background": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/games/wuwa/background.png",
             "slides": [
-                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/slide1.jpg",
-                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/slide2.jpg",
-                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/slide3.jpg",
-                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/slide4.jpg",
-                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/slide5.jpg"
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/games/wuwa/slide1.jpg",
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/games/wuwa/slide2.jpg",
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/games/wuwa/slide3.jpg",
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/games/wuwa/slide4.jpg",
+                "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/games/wuwa/slide5.jpg"
             ]
         },
         "tags": [
@@ -28,7 +28,7 @@
         ]
     },
     "package": {
-        "url": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/games/wuwa/package.json",
+        "url": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/games/wuwa/package.json",
         "output": "integration"
     }
 }
