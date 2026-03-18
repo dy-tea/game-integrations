@@ -1,4 +1,9 @@
 {
     "format": 1,
-    "games": []
+    "games": [
+        {
+            "url": "https://github.com/an-anime-team/game-integrations/blob/master/games/votv/manifest.json",
+            "featured": true
+        }
+    ]
 }
