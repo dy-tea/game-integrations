@@ -1,8 +1,8 @@
 {
     "version": 1,
     "inputs": {
-        "hyvlib": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/hyvlib/package.json",
-        "i18n": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/rewrite/packages/i18n/package.json"
+        "hyvlib": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/packages/hyvlib/package.json",
+        "i18n": "https://raw.githubusercontent.com/an-anime-team/game-integrations/refs/heads/master/packages/i18n/package.json"
     },
     "outputs": {
         "integration": "integration.luau"
